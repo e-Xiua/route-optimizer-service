@@ -33,25 +33,53 @@ public class POI {
     @JsonProperty("category")
     private String category;
     
+    @JsonProperty("subcategory")
+    private String subcategory;
+    
     @JsonProperty("rating")
     @DecimalMin(value = "0.0", message = "Rating must be between 0 and 5")
     @DecimalMax(value = "5.0", message = "Rating must be between 0 and 5")
     private Double rating;
     
-    @JsonProperty("visit_duration")
-    private Integer visitDuration; // in minutes
+    @JsonProperty("visitDuration")
+    private Integer visitDuration; // in minutes - frontend uses camelCase
     
-    @JsonProperty("opening_hours")
-    private String openingHours;
+    @JsonProperty("cost")
+    private Double cost;
     
-    @JsonProperty("price_level")
-    private Integer priceLevel; // 1-4 scale
+    @JsonProperty("openingHours")
+    private String openingHours; // frontend uses camelCase
     
     @JsonProperty("description")
     private String description;
     
+    @JsonProperty("imageUrl")
+    private String imageUrl;
+    
+    @JsonProperty("accessibility")
+    private Boolean accessibility = true;
+    
+    @JsonProperty("providerId")
+    private Long providerId; // frontend uses camelCase
+    
+    @JsonProperty("providerName")
+    private String providerName; // frontend uses camelCase
+    
+    // Legacy fields for backward compatibility
+    @JsonProperty("visit_duration")
+    private Integer visitDurationSnake; // snake_case for backend compatibility
+    
+    @JsonProperty("opening_hours")
+    private String openingHoursSnake; // snake_case for backend compatibility
+    
     @JsonProperty("provider_id")
-    private Long providerId;
+    private Long providerIdSnake; // snake_case for backend compatibility
+    
+    @JsonProperty("provider_name")
+    private String providerNameSnake; // snake_case for backend compatibility
+    
+    @JsonProperty("price_level")
+    private Integer priceLevel; // 1-4 scale
     
     @JsonProperty("services")
     private String services;
@@ -82,23 +110,56 @@ public class POI {
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
     
+    public String getSubcategory() { return subcategory; }
+    public void setSubcategory(String subcategory) { this.subcategory = subcategory; }
+    
     public Double getRating() { return rating; }
     public void setRating(Double rating) { this.rating = rating; }
     
     public Integer getVisitDuration() { return visitDuration; }
-    public void setVisitDuration(Integer visitDuration) { this.visitDuration = visitDuration; }
+    public void setVisitDuration(Integer visitDuration) { 
+        this.visitDuration = visitDuration;
+        this.visitDurationSnake = visitDuration; // Keep both in sync
+    }
+    
+    public Double getCost() { return cost; }
+    public void setCost(Double cost) { this.cost = cost; }
     
     public String getOpeningHours() { return openingHours; }
-    public void setOpeningHours(String openingHours) { this.openingHours = openingHours; }
-    
-    public Integer getPriceLevel() { return priceLevel; }
-    public void setPriceLevel(Integer priceLevel) { this.priceLevel = priceLevel; }
+    public void setOpeningHours(String openingHours) { 
+        this.openingHours = openingHours;
+        this.openingHoursSnake = openingHours; // Keep both in sync
+    }
     
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
     
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    
+    public Boolean getAccessibility() { return accessibility; }
+    public void setAccessibility(Boolean accessibility) { this.accessibility = accessibility; }
+    
     public Long getProviderId() { return providerId; }
-    public void setProviderId(Long providerId) { this.providerId = providerId; }
+    public void setProviderId(Long providerId) { 
+        this.providerId = providerId;
+        this.providerIdSnake = providerId; // Keep both in sync
+    }
+    
+    public String getProviderName() { return providerName; }
+    public void setProviderName(String providerName) { 
+        this.providerName = providerName;
+        this.providerNameSnake = providerName; // Keep both in sync
+    }
+    
+    // Legacy getters for backward compatibility
+    public Integer getVisitDurationSnake() { return visitDurationSnake; }
+    public String getOpeningHoursSnake() { return openingHoursSnake; }
+    public Long getProviderIdSnake() { return providerIdSnake; }
+    public String getProviderNameSnake() { return providerNameSnake; }
+    
+    public Integer getPriceLevel() { return priceLevel; }
+    public void setPriceLevel(Integer priceLevel) { this.priceLevel = priceLevel; }
     
     public String getServices() { return services; }
     public void setServices(String services) { this.services = services; }

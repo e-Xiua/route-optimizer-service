@@ -212,8 +212,32 @@ public class RouteProcessingRequestDTO {
         @JsonProperty("max_total_cost")
         private Double maxTotalCost;
         
+        @JsonProperty("preferred_categories")
+        private List<String> preferredCategories;
+        
+        @JsonProperty("avoid_categories")
+        private List<String> avoidCategories;
+        
+        @JsonProperty("group_size")
+        private Integer groupSize = 1;
+        
+        @JsonProperty("tourist_type")
+        private String touristType = "custom";
+        
         @JsonProperty("accessibility_required")
         private Boolean accessibilityRequired = false;
+        
+        @JsonProperty("adventure_level")
+        private Double adventureLevel = 50.0;
+        
+        @JsonProperty("cost_sensitivity")
+        private Double costSensitivity = 50.0;
+        
+        @JsonProperty("sustainability_min")
+        private Double sustainabilityMin = 60.0;
+        
+        @JsonProperty("max_distance_km")
+        private Double maxDistanceKm = 80.0;
 
         // Getters and Setters
         public String getOptimizeFor() {
@@ -247,12 +271,82 @@ public class RouteProcessingRequestDTO {
         public void setAccessibilityRequired(Boolean accessibilityRequired) {
             this.accessibilityRequired = accessibilityRequired;
         }
+
+        public List<String> getPreferredCategories() {
+            return preferredCategories;
+        }
+
+        public void setPreferredCategories(List<String> preferredCategories) {
+            this.preferredCategories = preferredCategories;
+        }
+
+        public List<String> getAvoidCategories() {
+            return avoidCategories;
+        }
+
+        public void setAvoidCategories(List<String> avoidCategories) {
+            this.avoidCategories = avoidCategories;
+        }
+
+        public Integer getGroupSize() {
+            return groupSize;
+        }
+
+        public void setGroupSize(Integer groupSize) {
+            this.groupSize = groupSize;
+        }
+
+        public String getTouristType() {
+            return touristType;
+        }
+
+        public void setTouristType(String touristType) {
+            this.touristType = touristType;
+        }
+
+        public Double getAdventureLevel() {
+            return adventureLevel;
+        }
+
+        public void setAdventureLevel(Double adventureLevel) {
+            this.adventureLevel = adventureLevel;
+        }
+
+        public Double getCostSensitivity() {
+            return costSensitivity;
+        }
+
+        public void setCostSensitivity(Double costSensitivity) {
+            this.costSensitivity = costSensitivity;
+        }
+
+        public Double getSustainabilityMin() {
+            return sustainabilityMin;
+        }
+
+        public void setSustainabilityMin(Double sustainabilityMin) {
+            this.sustainabilityMin = sustainabilityMin;
+        }
+
+        public Double getMaxDistanceKm() {
+            return maxDistanceKm;
+        }
+
+        public void setMaxDistanceKm(Double maxDistanceKm) {
+            this.maxDistanceKm = maxDistanceKm;
+        }
     }
 
     /**
      * Route constraints DTO
      */
     public static class RouteConstraintsDTO {
+        @JsonProperty("start_location")
+        private LocationDTO startLocation;
+        
+        @JsonProperty("end_location")
+        private LocationDTO endLocation;
+        
         @JsonProperty("start_time")
         private String startTime;
         
@@ -285,6 +379,56 @@ public class RouteProcessingRequestDTO {
 
         public void setLunchBreakDuration(Integer lunchBreakDuration) {
             this.lunchBreakDuration = lunchBreakDuration;
+        }
+
+        public LocationDTO getStartLocation() {
+            return startLocation;
+        }
+
+        public void setStartLocation(LocationDTO startLocation) {
+            this.startLocation = startLocation;
+        }
+
+        public LocationDTO getEndLocation() {
+            return endLocation;
+        }
+
+        public void setEndLocation(LocationDTO endLocation) {
+            this.endLocation = endLocation;
+        }
+    }
+
+    /**
+     * Location coordinates DTO
+     */
+    public static class LocationDTO {
+        @JsonProperty("latitude")
+        private Double latitude;
+        
+        @JsonProperty("longitude")
+        private Double longitude;
+
+        public LocationDTO() {}
+
+        public LocationDTO(Double latitude, Double longitude) {
+            this.latitude = latitude;
+            this.longitude = longitude;
+        }
+
+        public Double getLatitude() {
+            return latitude;
+        }
+
+        public void setLatitude(Double latitude) {
+            this.latitude = latitude;
+        }
+
+        public Double getLongitude() {
+            return longitude;
+        }
+
+        public void setLongitude(Double longitude) {
+            this.longitude = longitude;
         }
     }
 }

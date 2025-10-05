@@ -92,6 +92,10 @@ public class OptimizationJob {
             this.completedAt = LocalDateTime.now();
         }
     }
+
+    public OptimizationJob getResult() {
+        return this;
+    }
     
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

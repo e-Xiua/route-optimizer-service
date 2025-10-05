@@ -257,7 +257,7 @@ public class RouteOptimizationService {
         
         logger.info("Processing Request - Route ID: {}, User ID: {}", routeId, userId);
         
-        // Convert POIs
+        // Convert POIs - NOW SUPPORTS ALL FRONTEND FIELDS
         List<RouteProcessingRequestDTO.ProcessingPOIDTO> processingPOIs = request.getPois().stream()
             .map(poi -> {
                 RouteProcessingRequestDTO.ProcessingPOIDTO processingPOI = new RouteProcessingRequestDTO.ProcessingPOIDTO();
@@ -268,12 +268,14 @@ public class RouteOptimizationService {
                 processingPOI.setLatitude(poi.getLatitude() != null ? poi.getLatitude() : 10.501);
                 processingPOI.setLongitude(poi.getLongitude() != null ? poi.getLongitude() : -84.697);
                 processingPOI.setCategory(poi.getCategory() != null ? poi.getCategory() : "tourism");
-                processingPOI.setSubcategory("service"); // Default subcategory since POI model doesn't have this field
+                processingPOI.setSubcategory(poi.getSubcategory() != null ? poi.getSubcategory() : "service");
                 processingPOI.setVisitDuration(poi.getVisitDuration() != null ? poi.getVisitDuration() : 90);
-                processingPOI.setCost(poi.getPriceLevel() != null ? poi.getPriceLevel().doubleValue() * 10.0 : 50.0); // Convert priceLevel to cost
+                processingPOI.setCost(poi.getCost() != null ? poi.getCost() : 
+                    (poi.getPriceLevel() != null ? poi.getPriceLevel().doubleValue() * 10.0 : 50.0));
                 processingPOI.setRating(poi.getRating() != null ? poi.getRating() : 4.0);
                 processingPOI.setProviderId(poi.getProviderId());
-                processingPOI.setProviderName(poi.getProviderId() != null ? "Provider-" + poi.getProviderId() : "Unknown Provider");
+                processingPOI.setProviderName(poi.getProviderName() != null ? poi.getProviderName() : 
+                    (poi.getProviderId() != null ? "Provider-" + poi.getProviderId() : "Unknown Provider"));
                 
                 return processingPOI;
             })
@@ -281,14 +283,23 @@ public class RouteOptimizationService {
         
         processingRequest.setPois(processingPOIs);
         
-        // Set preferences
+        // Set preferences - NOW SUPPORTS ALL NEW FIELDS
         if (request.getPreferences() != null) {
             RouteProcessingRequestDTO.RoutePreferencesDTO preferences = new RouteProcessingRequestDTO.RoutePreferencesDTO();
             preferences.setOptimizeFor(request.getPreferences().getOptimizeFor() != null ? 
                 request.getPreferences().getOptimizeFor() : "distance");
             preferences.setMaxTotalTime(request.getPreferences().getMaxTotalTime());
             preferences.setMaxTotalCost(request.getPreferences().getMaxTotalCost());
-            preferences.setAccessibilityRequired(false); // Default to false since method doesn't exist
+            preferences.setPreferredCategories(request.getPreferences().getPreferredCategories());
+            preferences.setAvoidCategories(request.getPreferences().getAvoidCategories());
+            preferences.setGroupSize(request.getPreferences().getGroupSize());
+            preferences.setTouristType(request.getPreferences().getTouristType());
+            preferences.setAdventureLevel(request.getPreferences().getAdventureLevel());
+            preferences.setCostSensitivity(request.getPreferences().getCostSensitivity());
+            preferences.setSustainabilityMin(request.getPreferences().getSustainabilityMin());
+            preferences.setMaxDistanceKm(request.getPreferences().getMaxDistanceKm());
+            preferences.setAccessibilityRequired(request.getPreferences().getAccessibilityRequired() != null ? 
+                request.getPreferences().getAccessibilityRequired() : false);
             processingRequest.setPreferences(preferences);
         } else {
             // Default preferences
@@ -299,11 +310,36 @@ public class RouteOptimizationService {
             processingRequest.setPreferences(preferences);
         }
         
-        // Set default constraints since RouteOptimizationRequest doesn't have constraints field
+        // Set constraints - NOW SUPPORTS START/END LOCATIONS
         RouteProcessingRequestDTO.RouteConstraintsDTO constraints = new RouteProcessingRequestDTO.RouteConstraintsDTO();
-        constraints.setStartTime("09:00"); // Default start time
-        constraints.setLunchBreakRequired(true);
-        constraints.setLunchBreakDuration(60); // 1 hour lunch break
+        if (request.getConstraints() != null) {
+            // Map start/end locations if present
+            if (request.getConstraints().getStartLocation() != null) {
+                RouteProcessingRequestDTO.LocationDTO startLocation = new RouteProcessingRequestDTO.LocationDTO(
+                    request.getConstraints().getStartLocation().getLatitude(),
+                    request.getConstraints().getStartLocation().getLongitude()
+                );
+                constraints.setStartLocation(startLocation);
+            }
+            if (request.getConstraints().getEndLocation() != null) {
+                RouteProcessingRequestDTO.LocationDTO endLocation = new RouteProcessingRequestDTO.LocationDTO(
+                    request.getConstraints().getEndLocation().getLatitude(),
+                    request.getConstraints().getEndLocation().getLongitude()
+                );
+                constraints.setEndLocation(endLocation);
+            }
+            constraints.setStartTime(request.getConstraints().getStartTime() != null ? 
+                request.getConstraints().getStartTime() : "09:00");
+            constraints.setLunchBreakRequired(request.getConstraints().getLunchBreakRequired() != null ? 
+                request.getConstraints().getLunchBreakRequired() : true);
+            constraints.setLunchBreakDuration(request.getConstraints().getLunchBreakDuration() != null ? 
+                request.getConstraints().getLunchBreakDuration() : 60);
+        } else {
+            // Default constraints
+            constraints.setStartTime("09:00");
+            constraints.setLunchBreakRequired(true);
+            constraints.setLunchBreakDuration(60);
+        }
         processingRequest.setConstraints(constraints);
         
         try {

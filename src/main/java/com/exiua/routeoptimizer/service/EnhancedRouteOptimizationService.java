@@ -64,15 +64,19 @@ public class EnhancedRouteOptimizationService {
     @Value("${optimization.retry-attempts:3}")
     private int retryAttempts;
     
+    private final RouteOptimizationEventPublisher eventPublisher;
+    
     public EnhancedRouteOptimizationService(
             OptimizationJobRepository jobRepository, 
             MockDataService mockDataService,
             ObjectMapper objectMapper,
-            Executor taskExecutor) {
+            Executor taskExecutor,
+            RouteOptimizationEventPublisher eventPublisher) {
         this.jobRepository = jobRepository;
         this.mockDataService = mockDataService;
         this.objectMapper = objectMapper;
         this.taskExecutor = taskExecutor;
+        this.eventPublisher = eventPublisher;
         this.webClient = WebClient.builder()
             .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(16 * 1024 * 1024))
             .build();
@@ -105,6 +109,9 @@ public class EnhancedRouteOptimizationService {
             job.setEstimatedCompletionTime(LocalDateTime.now().plusMinutes(jobTimeoutMinutes));
             jobRepository.save(job);
             
+            // Publicar evento de solicitud recibida
+            eventPublisher.publishOptimizationRequested(jobId, request.getUserId(), request);
+            
             // Crear respuesta
             String pollingUrl = baseUrl + "/api/v1/jobs/" + jobId + "/status";
             JobSubmissionResponseDTO response = new JobSubmissionResponseDTO(jobId, pollingUrl);
@@ -121,9 +128,16 @@ public class EnhancedRouteOptimizationService {
                         logger.error("Error en procesamiento asíncrono para job {}: {}", jobId, throwable.getMessage());
                         totalJobsFailed.incrementAndGet();
                         updateJobStatusWithError(jobId, OptimizationJob.JobStatus.FAILED, throwable.getMessage());
+                        
+                        // Publicar evento de fallo
+                        eventPublisher.publishOptimizationFailed(jobId, request.getUserId(), throwable.getMessage());
                     } else {
                         totalJobsCompleted.incrementAndGet();
                         logger.info("Trabajo {} completado exitosamente", jobId);
+                        
+                        // Publicar evento de éxito
+                        Optional<OptimizationJob> completedJobOpt = jobRepository.findById(jobId);
+                        completedJobOpt.ifPresent(eventPublisher::publishOptimizationCompleted);
                     }
                 });
             
@@ -146,6 +160,11 @@ public class EnhancedRouteOptimizationService {
         return CompletableFuture
             .supplyAsync(() -> {
                 logger.info("Iniciando procesamiento asíncrono mejorado para job: {}", jobId);
+                
+                // Publicar evento de inicio
+                Optional<OptimizationJob> jobOpt = jobRepository.findById(jobId);
+                jobOpt.ifPresent(eventPublisher::publishOptimizationStarted);
+                
                 updateJobStatus(jobId, OptimizationJob.JobStatus.PROCESSING, 10);
                 
                 // Simular pasos de procesamiento
