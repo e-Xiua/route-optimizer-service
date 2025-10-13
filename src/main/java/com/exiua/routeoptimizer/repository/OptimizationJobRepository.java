@@ -55,4 +55,14 @@ public interface OptimizationJobRepository extends JpaRepository<OptimizationJob
      * Find the most recent job for a user
      */
     Optional<OptimizationJob> findFirstByUserIdOrderByCreatedAtDesc(String userId);
+    
+    /**
+     * Find all completed jobs ordered by completion date (most recent first)
+     */
+    List<OptimizationJob> findByStatusOrderByCompletedAtDesc(OptimizationJob.JobStatus status);
+    
+    /**
+     * Find completed jobs for a specific user
+     */
+    List<OptimizationJob> findByUserIdAndStatusOrderByCompletedAtDesc(String userId, OptimizationJob.JobStatus status);
 }

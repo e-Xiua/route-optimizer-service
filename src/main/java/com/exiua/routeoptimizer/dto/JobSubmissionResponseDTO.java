@@ -30,6 +30,12 @@ public class JobSubmissionResponseDTO {
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
 
+    @JsonProperty("status_url")
+    private String statusUrl;
+
+    @JsonProperty("cancel_url")
+    private String cancelUrl;
+
     // Constructors
     public JobSubmissionResponseDTO() {}
     
@@ -65,4 +71,10 @@ public class JobSubmissionResponseDTO {
     
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public String getStatusUrl() { return statusUrl; }
+    public void setStatusUrl(String statusUrl) { this.statusUrl = statusUrl; }
+
+    public String getCancelUrl() { return cancelUrl; }
+    public void setCancelUrl(String cancelUrl) { this.cancelUrl = cancelUrl; }
 }

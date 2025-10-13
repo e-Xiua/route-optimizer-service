@@ -1,8 +1,10 @@
+/home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/exceptions/JobNotFoundException.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/config/MockDataConfigurationProperties.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/dto/JobSubmissionResponseDTO.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/RouteOptimizerServiceApplication.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/config/ConcurrencyConfig.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/service/EnhancedRouteOptimizationService.java
+/home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/dto/CompletedRouteResponseDTO.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/service/RouteOptimizationEventListener.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/model/POI.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/model/RouteOptimizationRequest.java
@@ -12,6 +14,7 @@
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/service/RouteOptimizationService.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/service/MockDataService.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/repository/OptimizationJobRepository.java
+/home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/controller/GlobalExceptionHandler.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/controller/RouteOptimizationController.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/controller/SystemMonitoringController.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/config/RouteOptimizerRabbitConfig.java

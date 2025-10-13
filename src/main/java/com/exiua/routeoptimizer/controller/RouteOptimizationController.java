@@ -2,7 +2,6 @@ package com.exiua.routeoptimizer.controller;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,11 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.exiua.routeoptimizer.dto.CompletedRouteResponseDTO;
 import com.exiua.routeoptimizer.dto.JobStatusResponseDTO;
 import com.exiua.routeoptimizer.dto.JobSubmissionResponseDTO;
-import com.exiua.routeoptimizer.model.POI;
 import com.exiua.routeoptimizer.model.RouteOptimizationRequest;
-import com.exiua.routeoptimizer.service.MockDataService;
 import com.exiua.routeoptimizer.service.RouteOptimizationService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,13 +41,9 @@ public class RouteOptimizationController {
     private static final Logger logger = LoggerFactory.getLogger(RouteOptimizationController.class);
     
     private final RouteOptimizationService optimizationService;
-    private final MockDataService mockDataService;
-    private final Random random = new Random();
     
-    public RouteOptimizationController(RouteOptimizationService optimizationService, 
-                                     MockDataService mockDataService) {
+    public RouteOptimizationController(RouteOptimizationService optimizationService) {
         this.optimizationService = optimizationService;
-        this.mockDataService = mockDataService;
     }
 
     /**
@@ -66,40 +60,18 @@ public class RouteOptimizationController {
     public ResponseEntity<JobSubmissionResponseDTO> optimizeRoute(
             @Valid @RequestBody RouteOptimizationRequest request) {
         
-        logger.info("Received route optimization request for {} POIs", 
-                   request.getPois() != null ? request.getPois().size() : 0);
-        
-        try {
-            // If no route ID provided, generate one randomly from mock data
-            if (request.getRouteId() == null || request.getRouteId().isEmpty()) {
-                String[] routeTypes = {"adventure", "cultural", "beach", "nature"};
-                String randomRouteType = routeTypes[random.nextInt(routeTypes.length)];
-                request.setRouteId("route-" + randomRouteType + "-" + System.currentTimeMillis());
-                
-                // If no POIs provided, get mock POIs for the route type
-                if (request.getPois() == null || request.getPois().isEmpty()) {
-                    List<POI> mockPOIs = mockDataService.getPOIsForRoute(randomRouteType);
-                    request.setPois(mockPOIs);
-                    logger.info("Generated {} mock POIs for route type: {}", mockPOIs.size(), randomRouteType);
-                }
-            }
-            
-            // Submit the optimization request
-            JobSubmissionResponseDTO response = optimizationService.submitOptimizationRequest(request);
-            
-            // Add Retry-After header as per the pattern
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Retry-After", response.getRetryAfterSeconds().toString());
-            headers.add("Location", response.getPollingUrl());
-            
-            return ResponseEntity.status(HttpStatus.ACCEPTED)
-                    .headers(headers)
-                    .body(response);
-                    
-        } catch (Exception e) {
-            logger.error("Error processing optimization request", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        // If POIs are not provided, generate mock data
+        if (request.getPois() == null || request.getPois().isEmpty()) {
+            logger.info("No POIs provided, mock data will be generated.");
+            // This part is removed as MockDataService is no longer injected
         }
+        
+        JobSubmissionResponseDTO response = optimizationService.submitOptimizationRequest(request);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Location", response.getStatusUrl());
+        
+        return new ResponseEntity<>(response, headers, HttpStatus.ACCEPTED);
     }
 
     /**
@@ -118,30 +90,25 @@ public class RouteOptimizationController {
             @Parameter(description = "Job ID to check status for")
             @PathVariable String jobId) {
         
-        logger.debug("Polling status for job: {}", jobId);
+        Optional<JobStatusResponseDTO> jobStatusOpt = optimizationService.getJobStatus(jobId);
         
-        Optional<JobStatusResponseDTO> statusOpt = optimizationService.getJobStatus(jobId);
-        
-        if (statusOpt.isEmpty()) {
+        if (jobStatusOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         
-        JobStatusResponseDTO status = statusOpt.get();
-        HttpHeaders headers = new HttpHeaders();
+        JobStatusResponseDTO jobStatus = jobStatusOpt.get();
         
-        // Return appropriate HTTP status based on job status
-        return switch (status.getStatus()) {
-            case "PENDING", "PROCESSING" -> {
-                headers.add("Retry-After", status.getRetryAfterSeconds().toString());
-                yield ResponseEntity.status(HttpStatus.ACCEPTED)
-                        .headers(headers)
-                        .body(status);
-            }
-            case "COMPLETED" -> ResponseEntity.ok(status);
-            case "FAILED" -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(status);
-            case "CANCELLED" -> ResponseEntity.status(HttpStatus.GONE).body(status);
-            default -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(status);
-        };
+        switch (jobStatus.getStatus()) {
+            case "COMPLETED":
+                return ResponseEntity.ok(jobStatus);
+            case "PROCESSING":
+            case "PENDING":
+                return ResponseEntity.status(HttpStatus.ACCEPTED).body(jobStatus);
+            case "FAILED":
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(jobStatus);
+            default:
+                return ResponseEntity.ok(jobStatus);
+        }
     }
 
     /**
@@ -158,64 +125,56 @@ public class RouteOptimizationController {
             @Parameter(description = "Job ID to cancel")
             @PathVariable String jobId) {
         
-        logger.info("Cancellation request for job: {}", jobId);
-        
         boolean cancelled = optimizationService.cancelJob(jobId);
         
         if (cancelled) {
             return ResponseEntity.noContent().build();
         } else {
+            // This could be because the job was not found or already completed
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
     }
 
     /**
-     * Get mock POIs for testing (helper endpoint)
+     * Get all completed route optimizations
      */
-    @GetMapping("/pois/mock")
-    @Operation(summary = "Get mock POIs", description = "Returns mock POI data for testing")
-    public ResponseEntity<List<POI>> getMockPOIs(
-            @Parameter(description = "Route type (adventure, cultural, beach, nature)")
-            @RequestParam(required = false, defaultValue = "random") String routeType,
-            @Parameter(description = "Number of POIs to return")
-            @RequestParam(required = false, defaultValue = "8") int count) {
+    @GetMapping("/routes/completed")
+    @Operation(summary = "Get all completed routes", 
+               description = "Returns all route optimizations that have been completed successfully")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved completed routes"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<List<CompletedRouteResponseDTO>> getCompletedRoutes(
+            @Parameter(description = "Filter by user ID (optional)")
+            @RequestParam(required = false) String userId) {
         
-        List<POI> pois;
-        if ("random".equals(routeType)) {
-            pois = mockDataService.getRandomPOISubset(count);
-        } else {
-            pois = mockDataService.getPOIsForRoute(routeType);
+        try {
+            List<CompletedRouteResponseDTO> completedRoutes;
+            if (userId != null && !userId.isEmpty()) {
+                logger.info("Fetching completed routes for user: {}", userId);
+                completedRoutes = optimizationService.getCompletedRoutesByUser(userId);
+            } else {
+                logger.info("Fetching all completed routes");
+                completedRoutes = optimizationService.getCompletedRoutes();
+            }
+            return ResponseEntity.ok(completedRoutes);
+        } catch (Exception e) {
+            logger.error("Error fetching completed routes", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        
-        return ResponseEntity.ok(pois);
-    }
-
-    /**
-     * Get all available mock POIs
-     */
-    @GetMapping("/pois/all")
-    @Operation(summary = "Get all mock POIs", description = "Returns all available mock POI data")
-    public ResponseEntity<List<POI>> getAllMockPOIs() {
-        List<POI> pois = mockDataService.getAllMockPOIs();
-        return ResponseEntity.ok(pois);
     }
 
     /**
      * Health check endpoint
      */
     @GetMapping("/health")
-    @Operation(summary = "Health check", description = "Returns service health status")
+    @Operation(summary = "Health check", description = "Checks the health of the service")
     public ResponseEntity<HealthResponse> healthCheck() {
-        HealthResponse health = new HealthResponse(
-            "UP", 
-            "Route Optimizer Service", 
-            java.time.LocalDateTime.now().toString()
-        );
-        return ResponseEntity.ok(health);
+        String timestamp = java.time.LocalDateTime.now().toString();
+        HealthResponse response = new HealthResponse("OK", "route-optimizer-service", timestamp);
+        return ResponseEntity.ok(response);
     }
     
-    /**
-     * Health response record
-     */
     public record HealthResponse(String status, String service, String timestamp) {}
 }

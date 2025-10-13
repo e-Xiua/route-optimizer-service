@@ -1,7 +1,9 @@
+com/exiua/routeoptimizer/controller/GlobalExceptionHandler.class
 com/exiua/routeoptimizer/events/RouteOptimizationEvent.class
 com/exiua/routeoptimizer/RouteOptimizerServiceApplication.class
 com/exiua/routeoptimizer/dto/JobStatusResponseDTO$ErrorDetails.class
 com/exiua/routeoptimizer/model/RouteOptimizationRequest$RouteConstraints.class
+com/exiua/routeoptimizer/service/RouteOptimizationService$OptimizationResultData.class
 com/exiua/routeoptimizer/service/EnhancedRouteOptimizationService$SystemStatsDTO.class
 com/exiua/routeoptimizer/service/RouteOptimizationService$1.class
 com/exiua/routeoptimizer/dto/RouteProcessingRequestDTO$RoutePreferencesDTO.class
@@ -19,11 +21,14 @@ com/exiua/routeoptimizer/config/RouteProcessingConfigurationProperties.class
 com/exiua/routeoptimizer/controller/RouteOptimizationController$HealthResponse.class
 com/exiua/routeoptimizer/service/EnhancedRouteOptimizationService$2.class
 com/exiua/routeoptimizer/events/RouteOptimizationEvent$RoutePreferencesData.class
+com/exiua/routeoptimizer/dto/CompletedRouteResponseDTO$OptimizedPOIDTO.class
 com/exiua/routeoptimizer/service/MockDataService.class
 com/exiua/routeoptimizer/dto/RouteProcessingRequestDTO.class
 com/exiua/routeoptimizer/controller/SystemMonitoringController.class
+com/exiua/routeoptimizer/service/RouteOptimizationService$OptimizedPOIData.class
 com/exiua/routeoptimizer/service/RouteOptimizationService.class
 com/exiua/routeoptimizer/events/RouteOptimizationEvent$OptimizationResultData.class
+com/exiua/routeoptimizer/exceptions/JobNotFoundException.class
 com/exiua/routeoptimizer/config/OptimizationConfigurationProperties.class
 com/exiua/routeoptimizer/dto/RouteProcessingRequestDTO$LocationDTO.class
 com/exiua/routeoptimizer/dto/RouteProcessingRequestDTO$ProcessingPOIDTO.class
@@ -32,7 +37,6 @@ com/exiua/routeoptimizer/controller/RouteOptimizationController.class
 com/exiua/routeoptimizer/model/RouteOptimizationRequest.class
 com/exiua/routeoptimizer/dto/RouteProcessingRequestDTO$RouteConstraintsDTO.class
 com/exiua/routeoptimizer/service/EnhancedRouteOptimizationService.class
-com/exiua/routeoptimizer/service/RouteOptimizationService$1$1.class
 com/exiua/routeoptimizer/controller/SystemMonitoringController$CapacityResponse.class
 com/exiua/routeoptimizer/controller/SystemMonitoringController$HealthResponse.class
 com/exiua/routeoptimizer/config/JobConfigurationProperties.class
@@ -43,6 +47,6 @@ com/exiua/routeoptimizer/events/RouteOptimizationEvent$POIData.class
 com/exiua/routeoptimizer/dto/JobSubmissionResponseDTO.class
 com/exiua/routeoptimizer/config/CorsConfigurationProperties.class
 com/exiua/routeoptimizer/service/RouteOptimizationEventPublisher.class
+com/exiua/routeoptimizer/dto/CompletedRouteResponseDTO.class
 com/exiua/routeoptimizer/config/ConcurrencyConfig.class
 com/exiua/routeoptimizer/config/WebConfig.class
-com/exiua/routeoptimizer/service/RouteOptimizationService$2.class

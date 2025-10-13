@@ -1,6 +1,5 @@
 package com.exiua.routeoptimizer.service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -8,17 +7,23 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.exiua.routeoptimizer.dto.CompletedRouteResponseDTO;
 import com.exiua.routeoptimizer.dto.JobStatusResponseDTO;
 import com.exiua.routeoptimizer.dto.JobSubmissionResponseDTO;
 import com.exiua.routeoptimizer.dto.RouteProcessingRequestDTO;
+import com.exiua.routeoptimizer.exceptions.JobNotFoundException;
 import com.exiua.routeoptimizer.model.OptimizationJob;
 import com.exiua.routeoptimizer.model.RouteOptimizationRequest;
 import com.exiua.routeoptimizer.repository.OptimizationJobRepository;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -30,9 +35,9 @@ public class RouteOptimizationService {
     private static final Logger logger = LoggerFactory.getLogger(RouteOptimizationService.class);
     
     private final OptimizationJobRepository jobRepository;
-    private final MockDataService mockDataService;
     private final ObjectMapper objectMapper;
     private final WebClient webClient;
+    private RouteOptimizationService self;
     
     @Value("${route.processing.service.url:http://localhost:8001}")
     private String routeProcessingServiceUrl;
@@ -41,12 +46,15 @@ public class RouteOptimizationService {
     private String baseUrl;
     
     public RouteOptimizationService(OptimizationJobRepository jobRepository, 
-                                  MockDataService mockDataService,
                                   ObjectMapper objectMapper) {
         this.jobRepository = jobRepository;
-        this.mockDataService = mockDataService;
         this.objectMapper = objectMapper;
         this.webClient = WebClient.builder().build();
+    }
+
+    @Autowired
+    public void setSelf(@Lazy RouteOptimizationService self) {
+        this.self = self;
     }
     
     /**
@@ -54,39 +62,38 @@ public class RouteOptimizationService {
      */
     public JobSubmissionResponseDTO submitOptimizationRequest(RouteOptimizationRequest request) {
         try {
-            // Log the incoming request from frontend
-            logger.info("=== FRONTEND REQUEST RECEIVED ===");
-            logger.info("Route ID: {}", request.getRouteId());
-            logger.info("User ID: {}", request.getUserId());
-            logger.info("Number of POIs: {}", request.getPois() != null ? request.getPois().size() : 0);
-            logger.info("Frontend Request JSON: {}", objectMapper.writeValueAsString(request));
-            
-            // Generate unique job ID
-            String jobId = UUID.randomUUID().toString();
-            
-            // Create job record
+            String jobId = "job-" + UUID.randomUUID().toString();
+            logger.info("Received route optimization request. Assigned Job ID: {}", jobId);
+
+            // Create and save initial job status
             OptimizationJob job = new OptimizationJob(jobId, request.getUserId(), request.getRouteId());
             job.setRequestData(objectMapper.writeValueAsString(request));
-            job.setEstimatedCompletionTime(LocalDateTime.now().plusMinutes(5)); // Estimate 5 minutes
-            
-            // Save job to database
+            job.setStatus(OptimizationJob.JobStatus.PENDING);
+            job.setRouteId(request.getRouteId());
             jobRepository.save(job);
-            
-            // Build polling URL
-            String pollingUrl = baseUrl + "/api/v1/jobs/" + jobId + "/status";
-            
-            // Create response
-            JobSubmissionResponseDTO response = new JobSubmissionResponseDTO(jobId, pollingUrl);
-            response.setEstimatedCompletionTime(job.getEstimatedCompletionTime());
-            
+
+            // Log the request details for debugging
+            if (logger.isDebugEnabled()) {
+                try {
+                    logger.debug("Frontend Request JSON: {}", objectMapper.writeValueAsString(request));
+                } catch (JsonProcessingException e) {
+                    logger.warn("Could not serialize request for logging", e);
+                }
+            }
+
             // Start async processing
-            processOptimizationAsync(jobId, request);
+            self.processOptimizationAsync(jobId, request);
+
+            // Create response DTO
+            JobSubmissionResponseDTO response = new JobSubmissionResponseDTO();
+            response.setJobId(jobId);
+            response.setStatusUrl(baseUrl + "/api/v1/jobs/" + jobId + "/status");
+            response.setCancelUrl(baseUrl + "/api/v1/jobs/" + jobId);
             
-            logger.info("Route optimization request submitted with job ID: {}", jobId);
             return response;
             
         } catch (Exception e) {
-            logger.error("Error submitting optimization request", e);
+            logger.error("Failed to submit optimization request", e);
             throw new RuntimeException("Failed to submit optimization request", e);
         }
     }
@@ -98,7 +105,7 @@ public class RouteOptimizationService {
         Optional<OptimizationJob> jobOpt = jobRepository.findById(jobId);
         
         if (jobOpt.isEmpty()) {
-            return Optional.empty();
+            throw new JobNotFoundException("No job found with ID: " + jobId);
         }
         
         OptimizationJob job = jobOpt.get();
@@ -154,15 +161,16 @@ public class RouteOptimizationService {
         logger.info("Starting async processing for job: {}", jobId);
         
         try {
-            // Update job status to PROCESSING
-            updateJobStatus(jobId, OptimizationJob.JobStatus.PROCESSING, 10);
-            
             // Simulate processing steps
             simulateProcessingSteps(jobId);
             
             // Call Python service
             callPythonService(jobId, request);
-            
+
+        } catch (InterruptedException e) {
+            logger.warn("Job {} was interrupted", jobId);
+            updateJobStatusWithError(jobId, OptimizationJob.JobStatus.FAILED, "Processing was interrupted.");
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             logger.error("Error during async processing for job: {}", jobId, e);
             updateJobStatusWithError(jobId, OptimizationJob.JobStatus.FAILED, e.getMessage());
@@ -181,9 +189,8 @@ public class RouteOptimizationService {
         };
         
         for (int i = 0; i < steps.length; i++) {
-            logger.info("Job {}: {}", jobId, steps[i]);
-            updateJobStatus(jobId, OptimizationJob.JobStatus.PROCESSING, 20 + (i * 20));
-            Thread.sleep(2000); // Simulate processing time
+            Thread.sleep(1000); // Simulate work
+            updateJobStatus(jobId, OptimizationJob.JobStatus.PROCESSING, (i + 1) * (100 / steps.length));
         }
     }
     
@@ -191,53 +198,36 @@ public class RouteOptimizationService {
      * Call Route Processing Service which communicates with Python MRL-AMIS service
      */
     private void callPythonService(String jobId, RouteOptimizationRequest request) {
+        
+        RouteProcessingRequestDTO processingRequest = buildProcessingRequest(request);
+        
         try {
-            logger.info("=== CALLING ROUTE PROCESSING SERVICE ====");
-            logger.info("Job ID: {}", jobId);
-            logger.info("Route Processing Service URL: {}", routeProcessingServiceUrl);
-            
-            // Build the request for the route processing service
-            var processingRequest = buildProcessingRequest(request);
-            
-            // Call the route processing service
-            String processingUrl = routeProcessingServiceUrl + "/api/v1/process-route";
-            logger.info("Full endpoint URL: {}", processingUrl);
-            
-            logger.info("Sending POST request to route-processing-service...");
-            
-            String result = webClient.post()
-                .uri(processingUrl)
-                .bodyValue(processingRequest)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-            
-            logger.info("=== RESPONSE FROM ROUTE-PROCESSING-SERVICE ===");
-            logger.info("Response body: {}", result);
-            logger.info("============================================");
-            
-            // Update job with result
-            updateJobStatus(jobId, OptimizationJob.JobStatus.COMPLETED, 100);
-            updateJobResult(jobId, result);
-            
-            logger.info("Job {} completed successfully via Route Processing Service", jobId);
-            
-        } catch (Exception e) {
-            logger.error("Error calling Route Processing Service for job: {}", jobId, e);
-            
-            // Fallback to mock result if service is unavailable
-            logger.warn("Falling back to mock result for job: {}", jobId);
-            try {
-                String mockResult = generateMockOptimizationResult(request);
-                updateJobStatus(jobId, OptimizationJob.JobStatus.COMPLETED, 100);
-                updateJobResult(jobId, mockResult);
-                logger.info("Job {} completed with mock result", jobId);
-            } catch (Exception mockError) {
-                logger.error("Error generating mock result for job: {}", jobId, mockError);
-                updateJobStatusWithError(jobId, OptimizationJob.JobStatus.FAILED, 
-                    "Failed to communicate with optimization service and generate fallback result: " + e.getMessage());
+            if (logger.isDebugEnabled()) {
+                logger.debug("Calling route processing service at URL: {}", routeProcessingServiceUrl + "/api/v1/process-route");
+                logger.debug("Request body for processing service: {}", objectMapper.writeValueAsString(processingRequest));
             }
+        } catch (JsonProcessingException e) {
+            logger.warn("Could not serialize processing request for logging", e);
         }
+
+        webClient.post()
+            .uri(routeProcessingServiceUrl + "/api/v1/process-route")
+            .bodyValue(processingRequest)
+            .retrieve()
+            .bodyToMono(String.class)
+            .doOnSuccess(response -> {
+                logger.info("Successfully received response from processing service for job: {}", jobId);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Response from processing service: {}", response);
+                }
+                updateJobResult(jobId, response);
+                updateJobStatus(jobId, OptimizationJob.JobStatus.COMPLETED, 100);
+            })
+            .doOnError(error -> {
+                logger.error("Error calling processing service for job: {}", jobId, error);
+                updateJobStatusWithError(jobId, OptimizationJob.JobStatus.FAILED, "Failed to call processing service: " + error.getMessage());
+            })
+            .subscribe();
     }
     
     /**
@@ -354,37 +344,7 @@ public class RouteOptimizationService {
         
         return processingRequest;
     }
-    
-    /**
-     * Generate mock optimization result
-     */
-    private String generateMockOptimizationResult(RouteOptimizationRequest request) {
-        try {
-            // Create a mock optimized route result
-            var result = new Object() {
-                public final String optimized_route_id = UUID.randomUUID().toString();
-                public final Object[] optimized_sequence = request.getPois().stream()
-                    .map(poi -> new Object() {
-                        public final Long poi_id = poi.getId();
-                        public final String name = poi.getName();
-                        public final Double latitude = poi.getLatitude();
-                        public final Double longitude = poi.getLongitude();
-                        public final Integer visit_order = request.getPois().indexOf(poi) + 1;
-                        public final Integer estimated_visit_time = poi.getVisitDuration();
-                    }).toArray();
-                public final Double total_distance_km = 45.7 + (Math.random() * 50);
-                public final Integer total_time_minutes = 280 + (int)(Math.random() * 120);
-                public final String optimization_algorithm = "MRL-AMIS";
-                public final Double optimization_score = 0.85 + (Math.random() * 0.14);
-                public final String generated_at = LocalDateTime.now().toString();
-            };
-            
-            return objectMapper.writeValueAsString(result);
-        } catch (Exception e) {
-            throw new RuntimeException("Error generating mock result", e);
-        }
-    }
-    
+        
     /**
      * Update job status and progress
      */
@@ -432,5 +392,106 @@ public class RouteOptimizationService {
             }
         }
         return false;
+    }
+
+        
+    /**
+     * Get all completed route optimizations
+     */
+    public List<CompletedRouteResponseDTO> getCompletedRoutes() {
+        logger.info("Fetching all completed routes");
+        return jobRepository.findByStatusOrderByCompletedAtDesc(OptimizationJob.JobStatus.COMPLETED)
+                .stream()
+                .map(this::mapToCompletedRouteResponse)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get completed routes for a specific user
+     */
+    public List<CompletedRouteResponseDTO> getCompletedRoutesByUser(String userId) {
+        logger.info("Fetching completed routes for user: {}", userId);
+        return jobRepository.findByUserIdAndStatusOrderByCompletedAtDesc(userId, OptimizationJob.JobStatus.COMPLETED)
+                .stream()
+                .map(this::mapToCompletedRouteResponse)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Map OptimizationJob to CompletedRouteResponseDTO
+     */
+    private CompletedRouteResponseDTO mapToCompletedRouteResponse(OptimizationJob job) {
+        CompletedRouteResponseDTO response = new CompletedRouteResponseDTO();
+        response.setRequestId(job.getJobId());
+        response.setGeneratedAt(job.getCompletedAt());
+
+        if (job.getResultData() != null && !job.getResultData().isEmpty()) {
+            try {
+                OptimizationResultData resultData = objectMapper.readValue(job.getResultData(), OptimizationResultData.class);
+                response.setOptimizedRouteId(resultData.optimizedRouteId);
+                response.setTotalDistanceKm(resultData.totalDistanceKm);
+                response.setTotalTimeMinutes(resultData.totalTimeMinutes);
+                response.setOptimizationAlgorithm(resultData.algorithm);
+                response.setOptimizationScore(resultData.optimizationScore);
+
+                if (resultData.optimizedSequence != null) {
+                    List<CompletedRouteResponseDTO.OptimizedPOIDTO> poiDTOs = resultData.optimizedSequence.stream()
+                        .map(poiData -> {
+                            CompletedRouteResponseDTO.OptimizedPOIDTO poiDTO = new CompletedRouteResponseDTO.OptimizedPOIDTO();
+                            poiDTO.setPoiId(poiData.poiId);
+                            poiDTO.setName(poiData.name);
+                            poiDTO.setLatitude(poiData.latitude);
+                            poiDTO.setLongitude(poiData.longitude);
+                            poiDTO.setVisitOrder(poiData.visitOrder);
+                            poiDTO.setEstimatedVisitTime(poiData.estimatedVisitTime);
+                            poiDTO.setArrivalTime(poiData.arrivalTime);
+                            poiDTO.setDepartureTime(poiData.departureTime);
+                            return poiDTO;
+                        }).collect(Collectors.toList());
+                    response.setOptimizedSequence(poiDTOs);
+                }
+            } catch (Exception e) {
+                logger.error("Failed to parse result data for job: {}", job.getJobId(), e);
+            }
+        }
+
+        return response;
+    }
+
+    // Inner classes for deserializing result_data
+    private static class OptimizationResultData {
+        @JsonProperty("optimizedRouteId")
+        String optimizedRouteId;
+        @JsonProperty("optimizedSequence")
+        List<OptimizedPOIData> optimizedSequence;
+        @JsonProperty("totalDistanceKm")
+        Double totalDistanceKm;
+        @JsonProperty("totalTimeMinutes")
+        Integer totalTimeMinutes;
+        @JsonProperty("algorithm")
+        String algorithm;
+        @JsonProperty("optimizationScore")
+        Double optimizationScore;
+        @JsonProperty("generatedAt")
+        String generatedAt;
+    }
+
+    private static class OptimizedPOIData {
+        @JsonProperty("poiId")
+        Long poiId;
+        @JsonProperty("name")
+        String name;
+        @JsonProperty("latitude")
+        Double latitude;
+        @JsonProperty("longitude")
+        Double longitude;
+        @JsonProperty("visitOrder")
+        Integer visitOrder;
+        @JsonProperty("estimatedVisitTime")
+        Integer estimatedVisitTime;
+        @JsonProperty("arrivalTime")
+        String arrivalTime;
+        @JsonProperty("departureTime")
+        String departureTime;
     }
 }
