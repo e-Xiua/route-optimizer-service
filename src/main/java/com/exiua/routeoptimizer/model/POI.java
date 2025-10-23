@@ -1,5 +1,7 @@
 package com.exiua.routeoptimizer.model;
 
+import java.util.Arrays;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.validation.constraints.DecimalMax;
@@ -29,9 +31,9 @@ public class POI {
     @DecimalMin(value = "-180.0", message = "Longitude must be between -180 and 180")
     @DecimalMax(value = "180.0", message = "Longitude must be between -180 and 180")
     private Double longitude;
-    
-    @JsonProperty("category")
-    private String category;
+
+    @JsonProperty("categories")
+    private String[] categories;
     
     @JsonProperty("subcategory")
     private String subcategory;
@@ -107,8 +109,8 @@ public class POI {
     public Double getLongitude() { return longitude; }
     public void setLongitude(Double longitude) { this.longitude = longitude; }
     
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
+    public String[] getCategories() { return categories; }
+    public void setCategories(String[] categories) { this.categories = categories; }
     
     public String getSubcategory() { return subcategory; }
     public void setSubcategory(String subcategory) { this.subcategory = subcategory; }
@@ -171,7 +173,7 @@ public class POI {
                 ", name='" + name + '\'' +
                 ", latitude=" + latitude +
                 ", longitude=" + longitude +
-                ", category='" + category + '\'' +
+                ", categories='" + Arrays.toString(categories) + '\'' +
                 ", rating=" + rating +
                 '}';
     }

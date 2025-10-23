@@ -56,7 +56,7 @@ public class RouteOptimizationEvent {
         private String name;
         private Double latitude;
         private Double longitude;
-        private String category;
+        private String[] categories;
         private String subcategory;
         private Integer visitDuration;
         private Double cost;
@@ -75,8 +75,8 @@ public class RouteOptimizationEvent {
         public Double getLongitude() { return longitude; }
         public void setLongitude(Double longitude) { this.longitude = longitude; }
         
-        public String getCategory() { return category; }
-        public void setCategory(String category) { this.category = category; }
+        public String[] getCategories() { return categories; }
+        public void setCategories(String[] categories) { this.categories = categories; }
         
         public String getSubcategory() { return subcategory; }
         public void setSubcategory(String subcategory) { this.subcategory = subcategory; }

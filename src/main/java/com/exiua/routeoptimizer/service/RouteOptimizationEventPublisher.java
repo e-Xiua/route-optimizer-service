@@ -234,8 +234,8 @@ public class RouteOptimizationEventPublisher {
             poiData.setName(poi.getName());
             poiData.setLatitude(poi.getLatitude());
             poiData.setLongitude(poi.getLongitude());
-            poiData.setCategory(poi.getCategory());
-            poiData.setSubcategory(poi.getCategory());
+            poiData.setCategories(poi.getCategories());
+            poiData.setSubcategory(poi.getSubcategory());
             poiData.setVisitDuration(poi.getVisitDuration());
             poiData.setCost(poi.getPriceLevel() != null ? Double.valueOf(poi.getPriceLevel()) : null);
             poiData.setRating(poi.getRating());

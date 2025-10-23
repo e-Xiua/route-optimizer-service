@@ -38,7 +38,6 @@ public class EnhancedRouteOptimizationService {
     private static final Logger logger = LoggerFactory.getLogger(EnhancedRouteOptimizationService.class);
     
     private final OptimizationJobRepository jobRepository;
-    private final MockDataService mockDataService;
     private final ObjectMapper objectMapper;
     private final WebClient webClient;
     private final Executor taskExecutor;
@@ -68,12 +67,10 @@ public class EnhancedRouteOptimizationService {
     
     public EnhancedRouteOptimizationService(
             OptimizationJobRepository jobRepository, 
-            MockDataService mockDataService,
             ObjectMapper objectMapper,
             Executor taskExecutor,
             RouteOptimizationEventPublisher eventPublisher) {
         this.jobRepository = jobRepository;
-        this.mockDataService = mockDataService;
         this.objectMapper = objectMapper;
         this.taskExecutor = taskExecutor;
         this.eventPublisher = eventPublisher;
@@ -277,7 +274,7 @@ public class EnhancedRouteOptimizationService {
                 processingPOI.setName(poi.getName() != null ? poi.getName() : "POI Anónimo");
                 processingPOI.setLatitude(poi.getLatitude() != null ? poi.getLatitude() : 10.501);
                 processingPOI.setLongitude(poi.getLongitude() != null ? poi.getLongitude() : -84.697);
-                processingPOI.setCategory(poi.getCategory() != null ? poi.getCategory() : "tourism");
+                processingPOI.setCategories(poi.getCategories() != null ? poi.getCategories() : new String[]{"tourism"});
                 processingPOI.setSubcategory("service");
                 processingPOI.setVisitDuration(poi.getVisitDuration() != null ? poi.getVisitDuration() : 90);
                 processingPOI.setCost(poi.getPriceLevel() != null ? poi.getPriceLevel().doubleValue() * 10.0 : 50.0);

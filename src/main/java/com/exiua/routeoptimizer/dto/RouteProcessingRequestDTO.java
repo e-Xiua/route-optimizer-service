@@ -84,9 +84,9 @@ public class RouteProcessingRequestDTO {
         
         @JsonProperty("longitude")
         private Double longitude;
-        
-        @JsonProperty("category")
-        private String category;
+
+        @JsonProperty("categories")
+        private String[] categories;
         
         @JsonProperty("subcategory")
         private String subcategory;
@@ -142,12 +142,12 @@ public class RouteProcessingRequestDTO {
             this.longitude = longitude;
         }
 
-        public String getCategory() {
-            return category;
+        public String[] getCategories() {
+            return categories;
         }
 
-        public void setCategory(String category) {
-            this.category = category;
+        public void setCategories(String[] categories) {
+            this.categories = categories;
         }
 
         public String getSubcategory() {

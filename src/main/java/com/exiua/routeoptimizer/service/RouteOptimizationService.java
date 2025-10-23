@@ -257,7 +257,7 @@ public class RouteOptimizationService {
                 processingPOI.setName(poi.getName() != null ? poi.getName() : "Unnamed POI");
                 processingPOI.setLatitude(poi.getLatitude() != null ? poi.getLatitude() : 10.501);
                 processingPOI.setLongitude(poi.getLongitude() != null ? poi.getLongitude() : -84.697);
-                processingPOI.setCategory(poi.getCategory() != null ? poi.getCategory() : "tourism");
+                processingPOI.setCategories(poi.getCategories() != null ? poi.getCategories() : new String[]{"tourism"});
                 processingPOI.setSubcategory(poi.getSubcategory() != null ? poi.getSubcategory() : "service");
                 processingPOI.setVisitDuration(poi.getVisitDuration() != null ? poi.getVisitDuration() : 90);
                 processingPOI.setCost(poi.getCost() != null ? poi.getCost() : 
