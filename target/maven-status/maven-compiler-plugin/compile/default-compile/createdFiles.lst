@@ -2,7 +2,6 @@ com/exiua/routeoptimizer/client/PreferenciasApiClient.class
 com/exiua/routeoptimizer/controller/GlobalExceptionHandler.class
 com/exiua/routeoptimizer/events/RouteOptimizationEvent.class
 com/exiua/routeoptimizer/RouteOptimizerServiceApplication.class
-com/exiua/routeoptimizer/examples/UsageExamples.class
 com/exiua/routeoptimizer/dto/JobStatusResponseDTO$ErrorDetails.class
 com/exiua/routeoptimizer/model/RouteOptimizationRequest$RouteConstraints.class
 com/exiua/routeoptimizer/client/ServicioApiClient.class

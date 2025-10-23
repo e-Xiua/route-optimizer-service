@@ -28,7 +28,6 @@
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/model/OptimizationJob.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/dto/ProveedorDTO.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/config/CorsConfigurationProperties.java
-/home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/examples/UsageExamples.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/events/RouteOptimizationEvent.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/config/RabbitMQConfig.java
 /home/santiagovera/FrontEnd/e-Xiua/route-optimizer-service/src/main/java/com/exiua/routeoptimizer/config/RouteProcessingServiceConfigurationProperties.java
