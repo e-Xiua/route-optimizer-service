@@ -1,0 +1,62 @@
+version: '3.9'
+
+services:
+  route_optimizer_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: route-optimizer-service:latest
+    container_name: route_optimizer_service
+    ports:
+      - "${ROUTE_OPTIMIZER_PORT:-8085}:8085"
+    environment:
+      # Spring Profile
+      - SPRING_PROFILES_ACTIVE=docker
+      
+      # Server Configuration
+      - SERVER_PORT=${SERVER_PORT:-8085}
+      
+      # RabbitMQ Configuration
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME:-user}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-user}
+      
+      # Service URLs
+      - ROUTE_PROCESSING_URL=${ROUTE_PROCESSING_URL:-http://route_processing_service:8086}
+      
+      # CORS Configuration
+      - CORS_ORIGIN_1=${CORS_ORIGIN_1:-http://localhost:4200}
+      - CORS_ORIGIN_2=${CORS_ORIGIN_2:-http://localhost:3000}
+      
+      # Async Configuration
+      - ASYNC_CORE_SIZE=${ASYNC_CORE_SIZE:-5}
+      - ASYNC_MAX_SIZE=${ASYNC_MAX_SIZE:-20}
+      
+      # Job Configuration
+      - JOB_TIMEOUT=${JOB_TIMEOUT:-10}
+      - JOB_POLLING_INTERVAL=${JOB_POLLING_INTERVAL:-2}
+      - JOB_CLEANUP_HOURS=${JOB_CLEANUP_HOURS:-24}
+      - MAX_CONCURRENT_JOBS=${MAX_CONCURRENT_JOBS:-10}
+      
+      # Mock Data
+      - MOCK_DATA_ENABLED=${MOCK_DATA_ENABLED:-true}
+      
+      # Java Options (construido desde variables separadas)
+      - JAVA_OPTS=-Xms${JAVA_OPTS_XMS:-512m} -Xmx${JAVA_OPTS_XMX:-1024m}
+    
+    networks:
+      - tesisNetwork
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8085/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  tesisNetwork:
+    external: true
