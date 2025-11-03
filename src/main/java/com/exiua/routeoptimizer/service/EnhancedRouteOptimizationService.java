@@ -21,6 +21,7 @@ import com.exiua.routeoptimizer.dto.JobStatusResponseDTO;
 import com.exiua.routeoptimizer.dto.JobSubmissionResponseDTO;
 import com.exiua.routeoptimizer.dto.RouteProcessingRequestDTO;
 import com.exiua.routeoptimizer.model.OptimizationJob;
+import com.exiua.routeoptimizer.model.POI;
 import com.exiua.routeoptimizer.model.RouteOptimizationRequest;
 import com.exiua.routeoptimizer.repository.OptimizationJobRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,10 +55,10 @@ public class EnhancedRouteOptimizationService {
     @Value("${server.base-url:http://localhost:8085}")
     private String baseUrl;
     
-    @Value("${optimization.max-concurrent-jobs:5}")
+    @Value("${optimization.max-concurrent-jobs:1000}")
     private int maxConcurrentJobs;
     
-    @Value("${optimization.job-timeout-minutes:10}")
+    @Value("${optimization.job-timeout-minutes:1000000}")
     private int jobTimeoutMinutes;
     
     @Value("${optimization.retry-attempts:3}")
@@ -69,11 +70,13 @@ public class EnhancedRouteOptimizationService {
             OptimizationJobRepository jobRepository, 
             ObjectMapper objectMapper,
             Executor taskExecutor,
-            RouteOptimizationEventPublisher eventPublisher) {
+            RouteOptimizationEventPublisher eventPublisher,
+            ProcessingPOIBuilderService poiBuilderService) {
         this.jobRepository = jobRepository;
         this.objectMapper = objectMapper;
         this.taskExecutor = taskExecutor;
         this.eventPublisher = eventPublisher;
+        this.poiBuilderService = poiBuilderService;
         this.webClient = WebClient.builder()
             .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(16 * 1024 * 1024))
             .build();
@@ -256,7 +259,9 @@ public class EnhancedRouteOptimizationService {
     }
     
     /**
-     * Construir solicitud de procesamiento mejorada
+     * Construir solicitud de procesamiento usando POIs del request (ya enriquecidos)
+     * NOTA: POIs ya vienen enriquecidos del controller, NO necesitamos llamar a Feign clients aquí
+     * Esto evita problemas de autenticación en threads asíncronos
      */
     private RouteProcessingRequestDTO buildProcessingRequestEnhanced(RouteOptimizationRequest request) {
         RouteProcessingRequestDTO processingRequest = new RouteProcessingRequestDTO();
@@ -265,26 +270,53 @@ public class EnhancedRouteOptimizationService {
         processingRequest.setRouteId(request.getRouteId() != null ? request.getRouteId() : UUID.randomUUID().toString());
         processingRequest.setUserId(request.getUserId() != null ? request.getUserId() : "system-user");
         
-        // Convertir POIs con validación mejorada
-        List<RouteProcessingRequestDTO.ProcessingPOIDTO> processingPOIs = request.getPois().stream()
-            .map(poi -> {
-                RouteProcessingRequestDTO.ProcessingPOIDTO processingPOI = new RouteProcessingRequestDTO.ProcessingPOIDTO();
-                
-                processingPOI.setId(poi.getId() != null ? poi.getId() : System.currentTimeMillis() + Math.round(Math.random() * 1000));
-                processingPOI.setName(poi.getName() != null ? poi.getName() : "POI Anónimo");
-                processingPOI.setLatitude(poi.getLatitude() != null ? poi.getLatitude() : 10.501);
-                processingPOI.setLongitude(poi.getLongitude() != null ? poi.getLongitude() : -84.697);
-                processingPOI.setCategories(poi.getCategories() != null ? poi.getCategories() : new String[]{"tourism"});
-                processingPOI.setSubcategory("service");
-                processingPOI.setVisitDuration(poi.getVisitDuration() != null ? poi.getVisitDuration() : 90);
-                processingPOI.setCost(poi.getPriceLevel() != null ? poi.getPriceLevel().doubleValue() * 10.0 : 50.0);
-                processingPOI.setRating(poi.getRating() != null ? poi.getRating() : 4.0);
-                processingPOI.setProviderId(poi.getProviderId());
-                processingPOI.setProviderName(poi.getProviderId() != null ? "Provider-" + poi.getProviderId() : "Proveedor Desconocido");
-                
-                return processingPOI;
-            })
-            .collect(Collectors.toList());
+        logger.info("=== USANDO POIs DEL REQUEST (YA ENRIQUECIDOS) ===");
+        logger.info("POIs recibidos: {}", request.getPois() != null ? request.getPois().size() : 0);
+        
+        // USAR DATOS DIRECTAMENTE DEL REQUEST - YA ESTÁN ENRIQUECIDOS
+        // NO hacer llamadas a Feign clients aquí (causa 401 por falta de contexto auth en async thread)
+        List<RouteProcessingRequestDTO.ProcessingPOIDTO> processingPOIs = 
+            request.getPois().stream()
+                .map(poi -> {
+                    RouteProcessingRequestDTO.ProcessingPOIDTO dto = new RouteProcessingRequestDTO.ProcessingPOIDTO();
+                    
+                    // Basic identification and location
+                    dto.setId(poi.getId() != null ? poi.getId() : System.currentTimeMillis() + Math.round(Math.random() * 1000));
+                    dto.setName(poi.getName() != null ? poi.getName() : "POI Anónimo");
+                    dto.setLatitude(poi.getLatitude() != null ? poi.getLatitude() : 10.501);
+                    dto.setLongitude(poi.getLongitude() != null ? poi.getLongitude() : -84.697);
+                    
+                    // Categories and classification
+                    dto.setCategories(poi.getCategories() != null ? poi.getCategories() : new String[]{"tourism"});
+                    dto.setCategory(poi.getCategory() != null ? poi.getCategory() : "Turismo");
+                    dto.setSubcategory(poi.getSubcategory() != null ? poi.getSubcategory() : "service");
+                    
+                    // Timing and cost
+                    dto.setVisitDuration(poi.getVisitDuration() != null ? poi.getVisitDuration() : 60);
+                    dto.setCost(poi.getCost() != null ? poi.getCost() : 
+                        (poi.getPriceLevel() != null ? poi.getPriceLevel().doubleValue() * 10.0 : 50.0));
+                    dto.setRating(poi.getRating() != null ? poi.getRating() : 4.0);
+                    
+                    // Additional information
+                    dto.setDescription(poi.getDescription());
+                    dto.setOpeningHours(poi.getOpeningHours());
+                    dto.setImageUrl(poi.getImageUrl());
+                    dto.setAccessibility(poi.getAccessibility() != null ? poi.getAccessibility() : true);
+                    
+                    // Provider information
+                    dto.setProviderId(poi.getProviderId());
+                    dto.setProviderName(poi.getProviderName() != null ? poi.getProviderName() : 
+                        (poi.getProviderId() != null ? "Provider-" + poi.getProviderId() : "Proveedor Desconocido"));
+                    
+                    logger.debug("POI {}: category={}, duration={}min, cost=${}, description={}", 
+                        poi.getName(), dto.getCategory(), dto.getVisitDuration(), dto.getCost(), 
+                        dto.getDescription() != null ? dto.getDescription().substring(0, Math.min(30, dto.getDescription().length())) + "..." : "N/A");
+                    
+                    return dto;
+                })
+                .collect(Collectors.toList());
+        
+        logger.info("✓ {} POIs listos para procesamiento (sin llamadas adicionales a backend)", processingPOIs.size());
         
         processingRequest.setPois(processingPOIs);
         
@@ -297,7 +329,8 @@ public class EnhancedRouteOptimizationService {
             preferences.setMaxTotalCost(request.getPreferences().getMaxTotalCost());
         } else {
             preferences.setOptimizeFor("distance");
-            preferences.setMaxTotalTime(480); // 8 horas por defecto
+            // CAMBIADO: De 480 a 720 minutos (12 horas) - 480 causaba todas las rutas infeasibles
+            preferences.setMaxTotalTime(720);
         }
         preferences.setAccessibilityRequired(false);
         processingRequest.setPreferences(preferences);

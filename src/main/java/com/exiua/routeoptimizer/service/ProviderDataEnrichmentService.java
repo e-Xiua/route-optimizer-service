@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import com.exiua.routeoptimizer.client.PreferenciasApiClient;
 import com.exiua.routeoptimizer.client.ProviderApiClient;
 import com.exiua.routeoptimizer.client.ServicioApiClient;
+import com.exiua.routeoptimizer.dto.PreferenciasDTO;
 import com.exiua.routeoptimizer.dto.ProveedorDTO;
 import com.exiua.routeoptimizer.dto.ServicioDTO;
 import com.exiua.routeoptimizer.dto.ServicioXPreferenciaDTO;
@@ -46,6 +47,7 @@ public class ProviderDataEnrichmentService {
         private ProveedorDTO provider;
         private List<ServicioDTO> services;
         private Double averageCost;
+        private Integer averageVisitDuration; // Tiempo promedio de visita en minutos
         private List<String> categories; // Nombres de preferencias
         private Map<String, Object> metadata;
 
@@ -78,6 +80,14 @@ public class ProviderDataEnrichmentService {
 
         public void setAverageCost(Double averageCost) {
             this.averageCost = averageCost;
+        }
+
+        public Integer getAverageVisitDuration() {
+            return averageVisitDuration;
+        }
+
+        public void setAverageVisitDuration(Integer averageVisitDuration) {
+            this.averageVisitDuration = averageVisitDuration;
         }
 
         public List<String> getCategories() {
@@ -124,12 +134,17 @@ public class ProviderDataEnrichmentService {
             enrichedData.setAverageCost(averageCost);
             log.debug("Costo promedio calculado: {}", averageCost);
             
-            // 4. Obtener categorías (preferencias) de todos los servicios
+            // 4. Calcular tiempo de visita promedio
+            Integer averageVisitDuration = calculateAverageVisitDuration(services);
+            enrichedData.setAverageVisitDuration(averageVisitDuration);
+            log.debug("Tiempo de visita promedio calculado: {} minutos", averageVisitDuration);
+            
+            // 5. Obtener categorías (preferencias) de todos los servicios
             List<String> categories = extractCategoriesFromServices(services);
             enrichedData.setCategories(categories);
             log.debug("Categorías encontradas: {}", categories);
             
-            // 5. Metadata adicional
+            // 6. Metadata adicional
             enrichedData.getMetadata().put("totalServices", services.size());
             enrichedData.getMetadata().put("activeServices", 
                 services.stream().filter(ServicioDTO::isEstado).count());
@@ -141,11 +156,50 @@ public class ProviderDataEnrichmentService {
             
             // Establecer valores por defecto en caso de error
             enrichedData.setAverageCost(HIGH_COST_VALUE);
+            enrichedData.setAverageVisitDuration(30); // Fallback por defecto
             enrichedData.setServices(new ArrayList<>());
             enrichedData.setCategories(new ArrayList<>());
         }
         
         return enrichedData;
+    }
+
+    /**
+     * Calcula el tiempo de visita promedio de los servicios del proveedor
+     * Si no tiene servicios con tiempo definido, retorna 30 minutos por defecto
+     * 
+     * @param services Lista de servicios
+     * @return Tiempo promedio en minutos o 30 si no hay tiempos válidos
+     */
+    private Integer calculateAverageVisitDuration(List<ServicioDTO> services) {
+        if (services == null || services.isEmpty()) {
+            log.warn("No hay servicios disponibles, retornando tiempo por defecto (30 min)");
+            return 30;
+        }
+        
+        // Filtrar servicios activos con tiempo válido
+        List<Integer> validDurations = services.stream()
+            .filter(ServicioDTO::isEstado) // Solo servicios activos
+            .map(ServicioDTO::getTiempoAproximado)
+            .filter(tiempo -> tiempo != null && tiempo > 0)
+            .collect(Collectors.toList());
+        
+        if (validDurations.isEmpty()) {
+            log.warn("No hay tiempos válidos, retornando tiempo por defecto (30 min)");
+            return 30; // Fallback por defecto
+        }
+        
+        // Calcular promedio y redondear
+        double average = validDurations.stream()
+            .mapToInt(Integer::intValue)
+            .average()
+            .orElse(30.0);
+        
+        int roundedAverage = (int) Math.round(average);
+        log.debug("Tiempo promedio calculado de {} servicios: {} minutos", 
+            validDurations.size(), roundedAverage);
+        
+        return roundedAverage;
     }
 
     /**
@@ -200,29 +254,53 @@ public class ProviderDataEnrichmentService {
         
         for (ServicioDTO service : services) {
             try {
+                log.debug("Consultando preferencias para servicio ID: {} (nombre: {})", 
+                    service.getIdServicio(), service.getNombre());
+                
                 // Obtener preferencias asociadas al servicio
                 List<ServicioXPreferenciaDTO> preferences = 
                     preferenciasApiClient.obtenerPreferenciasPorServicio(service.getIdServicio());
                 
+                log.debug("Respuesta del API de preferencias: {} registros encontrados", 
+                    preferences != null ? preferences.size() : 0);
+                
                 if (preferences != null && !preferences.isEmpty()) {
-                    // Extraer IDs de preferencias y filtrar nulls
-                    List<Long> preferenceIds = preferences.stream()
-                        .map(ServicioXPreferenciaDTO::getIdPreferencia)
-                        .filter(id -> id != null) // Filtrar IDs null
-                        .collect(Collectors.toList());
+                    log.debug("Servicio {} (ID: {}) tiene {} preferencias asociadas", 
+                        service.getNombre(), service.getIdServicio(), preferences.size());
                     
-                    log.debug("Servicio {} tiene {} preferencias", 
-                        service.getNombre(), preferenceIds.size());
-                    
-                    // Aquí podrías hacer una llamada adicional para obtener los nombres
-                    // de las preferencias si el endpoint lo permite
-                    // Por ahora, usamos los IDs como strings
-                    preferenceIds.forEach(id -> allCategories.add("Preferencia_" + id));
+                    // Obtener nombres de preferencias del DTO anidado
+                    for (ServicioXPreferenciaDTO sxp : preferences) {
+                        // Acceder al objeto PreferenciaDTO anidado
+                        PreferenciasDTO preferenciaDTO = sxp.getNombrePreferencia();
+                        
+                        log.debug("Procesando preferencia: ID={}, PreferenciaDTO={}", 
+                            sxp.getIdPreferencia(), 
+                            preferenciaDTO != null ? preferenciaDTO.getNombre() : "null");
+                        
+                        // Extraer el nombre del objeto anidado
+                        if (preferenciaDTO != null && preferenciaDTO.getNombre() != null 
+                            && !preferenciaDTO.getNombre().trim().isEmpty()) {
+                            String nombrePreferencia = preferenciaDTO.getNombre();
+                            allCategories.add(nombrePreferencia);
+                            log.debug("✓ Agregada categoría: {} (ID: {})", 
+                                nombrePreferencia, sxp.getIdPreferencia());
+                        } else if (sxp.getIdPreferencia() != null) {
+                            // Fallback: usar el ID si no hay nombre
+                            log.warn("Preferencia ID {} no tiene nombre en DTO anidado, usando ID como fallback", 
+                                sxp.getIdPreferencia());
+                            allCategories.add("Preferencia_" + sxp.getIdPreferencia());
+                        } else {
+                            log.warn("ServicioXPreferenciaDTO sin ID ni PreferenciaDTO: {}", sxp);
+                        }
+                    }
+                } else {
+                    log.debug("Servicio {} (ID: {}) no tiene preferencias asociadas", 
+                        service.getNombre(), service.getIdServicio());
                 }
                 
             } catch (Exception e) {
-                log.warn("Error obteniendo preferencias para servicio {}: {}", 
-                    service.getIdServicio(), e.getMessage());
+                log.warn("Error obteniendo preferencias para servicio {} (ID: {}): {}", 
+                    service.getNombre(), service.getIdServicio(), e.getMessage());
             }
         }
         
@@ -232,6 +310,7 @@ public class ProviderDataEnrichmentService {
             .collect(Collectors.toList());
         
         log.debug("Total de categorías únicas encontradas: {}", uniqueCategories.size());
+        log.debug("Categorías encontradas: {}", uniqueCategories);
         return uniqueCategories;
     }
 

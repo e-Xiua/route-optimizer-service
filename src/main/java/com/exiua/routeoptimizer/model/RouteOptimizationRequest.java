@@ -23,7 +23,7 @@ public class RouteOptimizationRequest {
     @NotNull(message = "POIs list is required")
     @NotEmpty(message = "POIs list cannot be empty")
     @Valid
-    private List<POI> pois;
+    public List<POI> pois;
     
     @JsonProperty("preferences")
     private RoutePreferences preferences;
@@ -127,7 +127,7 @@ public class RouteOptimizationRequest {
             return 1.0;
         }
         public Double getMaxDistanceKm() {
-            return 100.0;
+            return 10000000000000.0;
         }
     }
     

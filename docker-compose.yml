@@ -43,6 +43,7 @@ services:
       - PREFERENCIAS_SERVICE_URL=${PREFERENCIAS_SERVICE_URL:-http://user-preferences-api:8081}
       - TURISTA_SERVICE_URL=${TURISTA_SERVICE_URL:-http://admin-users-api:8082}
       - SERVICIO_SERVICE_URL=${SERVICIO_SERVICE_URL:-http://providers-api:8080}
+      - PROVEEDOR_SERVICE_URL=${PROVEEDOR_SERVICE_URL:-http://providers-api:8080/usuarios}
       
       # Mock Data
       - MOCK_DATA_ENABLED=${MOCK_DATA_ENABLED:-true}

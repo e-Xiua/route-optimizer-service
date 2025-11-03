@@ -240,10 +240,11 @@ public class ProcessingPOIBuilderService {
         poi.setOpeningHours("Consultar con proveedor"); // Podría obtenerse de los servicios
         poi.setAccessibility(false); // Valor por defecto
         poi.setRating(0.0); // Podría calcularse desde las reseñas
-        poi.setVisitDuration(60); // Valor por defecto en minutos
+        // Usar tiempo promedio de los servicios del proveedor
+        poi.setVisitDuration(enrichedData.getAverageVisitDuration());
         
-        log.debug("POI enriquecido construido: ID={}, Costo={}, Categorías={}", 
-            poi.getId(), poi.getCost(), poi.getCategories().size());
+        log.debug("POI enriquecido construido: ID={}, Costo={}, Categorías={}, VisitDuration={} min", 
+            poi.getId(), poi.getCost(), poi.getCategories().size(), poi.getVisitDuration());
         
         return poi;
     }
@@ -353,7 +354,8 @@ public class ProcessingPOIBuilderService {
         poi.setOpeningHours("Consultar con proveedor");
         poi.setAccessibility(false);
         poi.setRating(0.0);
-        poi.setVisitDuration(60);
+        // Usar tiempo promedio de los servicios del proveedor
+        poi.setVisitDuration(enrichedData.getAverageVisitDuration());
         
         return poi;
     }

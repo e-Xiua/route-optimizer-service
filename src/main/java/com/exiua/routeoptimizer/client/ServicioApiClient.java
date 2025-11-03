@@ -8,11 +8,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import com.exiua.routeoptimizer.dto.ServicioDTO;
 
-@FeignClient(name = "servicio-ms", url = "http://localhost:8080/api/servicio")
-
+@FeignClient(name = "servicio-ms", url = "${feign.client.servicio.url:http://localhost:8080}")
 public interface ServicioApiClient {
 
-    @GetMapping("/{idProveedor}/servicios")
+    @GetMapping("/api/servicio/{idProveedor}/servicios")
     List<ServicioDTO> obtenerServiciosPorProveedor(@PathVariable("idProveedor") Long idProveedor);
 
 }
