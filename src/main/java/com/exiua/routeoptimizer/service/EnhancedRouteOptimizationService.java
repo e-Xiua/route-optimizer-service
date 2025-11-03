@@ -65,6 +65,7 @@ public class EnhancedRouteOptimizationService {
     private int retryAttempts;
     
     private final RouteOptimizationEventPublisher eventPublisher;
+    private final ProcessingPOIBuilderService poiBuilderService;
     
     public EnhancedRouteOptimizationService(
             OptimizationJobRepository jobRepository, 
