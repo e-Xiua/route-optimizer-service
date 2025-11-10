@@ -88,6 +88,9 @@ public class RouteProcessingRequestDTO {
         @JsonProperty("categories")
         private String[] categories;
         
+        @JsonProperty("category")
+        private String category; // Main category (single)
+        
         @JsonProperty("subcategory")
         private String subcategory;
         
@@ -99,6 +102,18 @@ public class RouteProcessingRequestDTO {
         
         @JsonProperty("rating")
         private Double rating;
+        
+        @JsonProperty("description")
+        private String description;
+        
+        @JsonProperty("opening_hours")
+        private String openingHours;
+        
+        @JsonProperty("image_url")
+        private String imageUrl;
+        
+        @JsonProperty("accessibility")
+        private Boolean accessibility;
         
         @JsonProperty("provider_id")
         private Long providerId;
@@ -150,6 +165,14 @@ public class RouteProcessingRequestDTO {
             this.categories = categories;
         }
 
+        public String getCategory() {
+            return category;
+        }
+
+        public void setCategory(String category) {
+            this.category = category;
+        }
+
         public String getSubcategory() {
             return subcategory;
         }
@@ -180,6 +203,38 @@ public class RouteProcessingRequestDTO {
 
         public void setRating(Double rating) {
             this.rating = rating;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        public String getOpeningHours() {
+            return openingHours;
+        }
+
+        public void setOpeningHours(String openingHours) {
+            this.openingHours = openingHours;
+        }
+
+        public String getImageUrl() {
+            return imageUrl;
+        }
+
+        public void setImageUrl(String imageUrl) {
+            this.imageUrl = imageUrl;
+        }
+
+        public Boolean getAccessibility() {
+            return accessibility;
+        }
+
+        public void setAccessibility(Boolean accessibility) {
+            this.accessibility = accessibility;
         }
 
         public Long getProviderId() {

@@ -9,8 +9,8 @@ import com.exiua.routeoptimizer.dto.ProveedorDTO;
 
 
 @FeignClient(
-    name = "proveedor-ms", 
-    url = "http://localhost:8082/usuarios",
+    name = "admin-users-service", 
+    url = "${feign.client.proveedor.url}",
     configuration = FeignClientInterceptor.class
 )
 public interface ProviderApiClient {

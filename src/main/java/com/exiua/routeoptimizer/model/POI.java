@@ -35,6 +35,9 @@ public class POI {
     @JsonProperty("categories")
     private String[] categories;
     
+    @JsonProperty("category")
+    private String category; // Single category string (main category)
+    
     @JsonProperty("subcategory")
     private String subcategory;
     
@@ -111,6 +114,9 @@ public class POI {
     
     public String[] getCategories() { return categories; }
     public void setCategories(String[] categories) { this.categories = categories; }
+    
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
     
     public String getSubcategory() { return subcategory; }
     public void setSubcategory(String subcategory) { this.subcategory = subcategory; }

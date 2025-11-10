@@ -133,23 +133,40 @@ public class EnrichedRouteOptimizationIntegrationService {
     private com.exiua.routeoptimizer.model.POI convertToPOI(EnrichedProcessingPOI enrichedPOI) {
         com.exiua.routeoptimizer.model.POI poi = new com.exiua.routeoptimizer.model.POI();
         
+        // Basic identification
         poi.setId(enrichedPOI.getId());
         poi.setName(enrichedPOI.getName());
         poi.setLatitude(enrichedPOI.getLatitude());
         poi.setLongitude(enrichedPOI.getLongitude());
+        
+        // Categories (both array and single)
         List<String> categories = enrichedPOI.getCategories();
         if (categories != null && !categories.isEmpty()) {
             poi.setCategories(categories.toArray(new String[0]));
         } else {
             poi.setCategories(new String[0]);
         }
+        poi.setCategory(enrichedPOI.getCategory()); // Single category string
+        poi.setSubcategory(enrichedPOI.getSubcategory());
+        
+        // Timing and cost
         poi.setVisitDuration(enrichedPOI.getVisitDuration());
+        poi.setCost(enrichedPOI.getCost());
+        poi.setRating(enrichedPOI.getRating());
         
-        // Agregar cost como atributo adicional si el modelo lo soporta
-        // De lo contrario, el costo ya está incluido en la lógica de optimización
+        // Additional information
+        poi.setDescription(enrichedPOI.getDescription());
+        poi.setOpeningHours(enrichedPOI.getOpeningHours());
+        poi.setImageUrl(enrichedPOI.getImageUrl());
+        poi.setAccessibility(enrichedPOI.getAccessibility());
         
-        log.debug("Convertido POI: {} (Costo: {}, Categorías: {})", 
-            enrichedPOI.getName(), enrichedPOI.getCost(), enrichedPOI.getCategories());
+        // Provider information
+        poi.setProviderId(enrichedPOI.getProviderId());
+        poi.setProviderName(enrichedPOI.getProviderName());
+        
+        log.debug("Convertido POI: {} (ProviderId: {}, Costo: {}, Categorías: {}, Description: {})", 
+            enrichedPOI.getName(), enrichedPOI.getProviderId(), enrichedPOI.getCost(), 
+            enrichedPOI.getCategories(), enrichedPOI.getDescription());
         
         return poi;
     }
