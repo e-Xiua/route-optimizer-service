@@ -7,12 +7,8 @@ public class ProveedorDTO {
     private Long id;  // From UsuarioResponseDTO
     private Long idProveedor;
     private String nombre;
-    private String nombre_empresa;
-    private String cargoContacto;
-    private String telefono;
-    private String telefonoEmpresa;
-    private String coordenadaX;
-    private String coordenadaY;
+    private String correo;
+    private String foto;
     
     // Nested ProveedorInfo from UsuarioResponseDTO
     private ProveedorInfo proveedorInfo;
@@ -31,17 +27,13 @@ public class ProveedorDTO {
     
     // Helper methods to get coordinates from nested structure or flat structure
     public String getCoordenadaX() {
-        if (proveedorInfo != null && proveedorInfo.getCoordenadaX() != null) {
-            return proveedorInfo.getCoordenadaX();
-        }
-        return coordenadaX;
+        
+        return proveedorInfo.getCoordenadaX();
+        
     }
     
     public String getCoordenadaY() {
-        if (proveedorInfo != null && proveedorInfo.getCoordenadaY() != null) {
             return proveedorInfo.getCoordenadaY();
-        }
-        return coordenadaY;
     }
     
     public Long getIdProveedor() {
@@ -61,6 +53,6 @@ public class ProveedorDTO {
         if (proveedorInfo != null && proveedorInfo.getNombreEmpresa() != null) {
             return proveedorInfo.getNombreEmpresa();
         }
-        return nombre_empresa;
+        return proveedorInfo != null ? proveedorInfo.getNombre_empresa() : null;
     }
 }
