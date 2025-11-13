@@ -1,16 +1,16 @@
 package com.exiua.routeoptimizer.service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.exiua.routeoptimizer.dto.CompletedRouteResponseDTO;
 import com.exiua.routeoptimizer.model.OptimizationJob;
 import com.exiua.routeoptimizer.repository.OptimizationJobRepository;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -34,7 +34,7 @@ public class RoutesFromUserService {
         return jobRepository.findByStatusOrderByCompletedAtDesc(OptimizationJob.JobStatus.COMPLETED)
                 .stream()
                 .map(this::mapToCompletedRouteResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
     
     /**
@@ -45,7 +45,7 @@ public class RoutesFromUserService {
         return jobRepository.findByUserIdAndStatusOrderByCompletedAtDesc(userId, OptimizationJob.JobStatus.COMPLETED)
                 .stream()
                 .map(this::mapToCompletedRouteResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
         /**
@@ -58,8 +58,17 @@ public class RoutesFromUserService {
 
         if (job.getResultData() != null && !job.getResultData().isEmpty()) {
             try {
+                logger.debug("Parsing result data for job: {}", job.getJobId());
+                logger.debug("Raw result data: {}", job.getResultData());
+                
                 OptimizationResultData resultData = objectMapper.readValue(job.getResultData(), OptimizationResultData.class);
-                response.setOptimizedRouteId(resultData.optimizedRouteId);
+                
+                logger.debug("Parsed result - requestId: {}, routeId: {}, distance: {}, time: {}", 
+                    resultData.requestId, resultData.optimizedRouteId, resultData.totalDistanceKm, resultData.totalTimeMinutes);
+                
+                // Usar requestId si optimizedRouteId es null
+                String finalRouteId = resultData.optimizedRouteId != null ? resultData.optimizedRouteId : resultData.requestId;
+                response.setOptimizedRouteId(finalRouteId);
                 response.setTotalDistanceKm(resultData.totalDistanceKm);
                 response.setTotalTimeMinutes(resultData.totalTimeMinutes);
                 response.setOptimizationAlgorithm(resultData.algorithm);
@@ -78,7 +87,7 @@ public class RoutesFromUserService {
                             poiDTO.setArrivalTime(poiData.arrivalTime);
                             poiDTO.setDepartureTime(poiData.departureTime);
                             return poiDTO;
-                        }).collect(Collectors.toList());
+                        }).toList();
                     response.setOptimizedSequence(poiDTOs);
                 }
             } catch (Exception e) {
@@ -90,25 +99,38 @@ public class RoutesFromUserService {
     }
 
         // Inner classes for deserializing result_data
+    // NOTA: Estos campos deben coincidir con el formato del JSON guardado (tanto camelCase como snake_case)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class OptimizationResultData {
+        @JsonProperty("requestId")
+        String requestId;
         @JsonProperty("optimizedRouteId")
+        @JsonAlias({"optimized_route_id"})
         String optimizedRouteId;
         @JsonProperty("optimizedSequence")
+        @JsonAlias({"optimized_sequence"})
         List<OptimizedPOIData> optimizedSequence;
         @JsonProperty("totalDistanceKm")
+        @JsonAlias({"total_distance_km"})
         Double totalDistanceKm;
         @JsonProperty("totalTimeMinutes")
+        @JsonAlias({"total_time_minutes"})
         Integer totalTimeMinutes;
         @JsonProperty("algorithm")
+        @JsonAlias({"optimization_algorithm"})
         String algorithm;
         @JsonProperty("optimizationScore")
+        @JsonAlias({"optimization_score"})
         Double optimizationScore;
         @JsonProperty("generatedAt")
+        @JsonAlias({"generated_at", "processed_at", "processedAt"})
         String generatedAt;
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class OptimizedPOIData {
         @JsonProperty("poiId")
+        @JsonAlias({"poi_id"})
         Long poiId;
         @JsonProperty("name")
         String name;
@@ -117,12 +139,16 @@ public class RoutesFromUserService {
         @JsonProperty("longitude")
         Double longitude;
         @JsonProperty("visitOrder")
+        @JsonAlias({"visit_order"})
         Integer visitOrder;
         @JsonProperty("estimatedVisitTime")
+        @JsonAlias({"estimated_visit_time"})
         Integer estimatedVisitTime;
         @JsonProperty("arrivalTime")
+        @JsonAlias({"arrival_time"})
         String arrivalTime;
         @JsonProperty("departureTime")
+        @JsonAlias({"departure_time"})
         String departureTime;
     }
 
