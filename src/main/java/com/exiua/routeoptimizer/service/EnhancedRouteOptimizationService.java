@@ -21,7 +21,6 @@ import com.exiua.routeoptimizer.dto.JobStatusResponseDTO;
 import com.exiua.routeoptimizer.dto.JobSubmissionResponseDTO;
 import com.exiua.routeoptimizer.dto.RouteProcessingRequestDTO;
 import com.exiua.routeoptimizer.model.OptimizationJob;
-import com.exiua.routeoptimizer.model.POI;
 import com.exiua.routeoptimizer.model.RouteOptimizationRequest;
 import com.exiua.routeoptimizer.repository.OptimizationJobRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;

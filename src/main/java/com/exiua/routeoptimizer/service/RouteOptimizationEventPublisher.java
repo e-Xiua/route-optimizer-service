@@ -117,7 +117,8 @@ public class RouteOptimizationEventPublisher {
             if (job.getResult() != null) {
                 RouteOptimizationEvent.OptimizationResultData result = 
                         new RouteOptimizationEvent.OptimizationResultData();
-                result.setOptimizedRouteId(job.getJobId());
+                // Usar el routeId real como identificador de la ruta optimizada (no el jobId)
+                result.setOptimizedRouteId(job.getRouteId() != null ? job.getRouteId() : job.getJobId());
                 result.setRouteDescription("Ruta optimizada usando algoritmo MRL-AMIS");
                 // Aquí se podrían mapear más datos del resultado
                 event.setResult(result);
