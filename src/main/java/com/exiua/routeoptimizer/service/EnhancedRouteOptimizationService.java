@@ -94,11 +94,31 @@ public class EnhancedRouteOptimizationService {
                 throw new RuntimeException("Sistema ocupado. Demasiados trabajos en procesamiento. Intente más tarde.");
             }
             
-            logger.info("=== NUEVA SOLICITUD DE OPTIMIZACIÓN ===");
+            // 📥 LOGGING: Incoming request from frontend
+            logger.info("=== 📥 NUEVA SOLICITUD DE OPTIMIZACIÓN RECIBIDA ===");
             logger.info("Route ID: {}", request.getRouteId());
             logger.info("User ID: {}", request.getUserId());
             logger.info("Número de POIs: {}", request.getPois() != null ? request.getPois().size() : 0);
             logger.info("Trabajos activos: {}/{}", activeJobs.size(), maxConcurrentJobs);
+            
+            // Log full request details
+            try {
+                String requestJson = objectMapper.writeValueAsString(request);
+                logger.info("Request completo (JSON): {}", requestJson);
+            } catch (Exception e) {
+                logger.warn("No se pudo serializar el request a JSON: {}", e.getMessage());
+            }
+            
+            // Log POI summary
+            if (request.getPois() != null && !request.getPois().isEmpty()) {
+                logger.info("POIs en el request:");
+                request.getPois().forEach(poi -> {
+                    logger.info("  - POI ID: {}, Name: {}, Provider: {}, Lat: {}, Lon: {}, Cost: {}, Duration: {}min",
+                        poi.getId(), poi.getName(), poi.getProviderName(), 
+                        poi.getLatitude(), poi.getLongitude(), poi.getCost(), poi.getVisitDuration());
+                });
+            }
+            logger.info("=================================================");
             
             // Generar job ID único
             String jobId = UUID.randomUUID().toString();
@@ -343,6 +363,27 @@ public class EnhancedRouteOptimizationService {
         constraints.setLunchBreakDuration(60);
         processingRequest.setConstraints(constraints);
         
+        // 📤 LOGGING: Processing request being sent to route-processing-service
+        logger.info("=== 📤 DATOS ENVIADOS A ROUTE-PROCESSING-SERVICE ===");
+        try {
+            String processingRequestJson = objectMapper.writeValueAsString(processingRequest);
+            logger.info("RouteProcessingRequestDTO completo (JSON): {}", processingRequestJson);
+        } catch (Exception e) {
+            logger.warn("No se pudo serializar el processingRequest a JSON: {}", e.getMessage());
+        }
+        
+        logger.info("Resumen del request de procesamiento:");
+        logger.info("  - Route ID: {}", processingRequest.getRouteId());
+        logger.info("  - User ID: {}", processingRequest.getUserId());
+        logger.info("  - POIs count: {}", processingRequest.getPois() != null ? processingRequest.getPois().size() : 0);
+        logger.info("  - Optimize for: {}", processingRequest.getPreferences() != null ? 
+            processingRequest.getPreferences().getOptimizeFor() : "N/A");
+        logger.info("  - Max total time: {}min", processingRequest.getPreferences() != null ? 
+            processingRequest.getPreferences().getMaxTotalTime() : "N/A");
+        logger.info("  - Max total cost: ${}", processingRequest.getPreferences() != null ? 
+            processingRequest.getPreferences().getMaxTotalCost() : "N/A");
+        logger.info("=====================================================");
+        
         return processingRequest;
     }
     
@@ -500,6 +541,48 @@ public class EnhancedRouteOptimizationService {
     }
     
     private void updateJobResult(String jobId, String resultData) {
+        // 📥 LOGGING: Final optimized result received from route-processing-service
+        logger.info("=== 📥 RESULTADO DE OPTIMIZACIÓN RECIBIDO ===");
+        logger.info("Job ID: {}", jobId);
+        logger.info("Result data length: {} bytes", resultData != null ? resultData.length() : 0);
+        
+        if (resultData != null && !resultData.isEmpty()) {
+            try {
+                // Parse and log the result structure
+                Object resultObj = objectMapper.readValue(resultData, Object.class);
+                String prettyJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(resultObj);
+                logger.info("Result JSON (formatted):\n{}", prettyJson);
+                
+                // Log summary if it's a map
+                if (resultObj instanceof java.util.Map) {
+                    java.util.Map<?, ?> resultMap = (java.util.Map<?, ?>) resultObj;
+                    logger.info("Result summary:");
+                    logger.info("  - Keys in result: {}", resultMap.keySet());
+                    if (resultMap.containsKey("optimizedSequence")) {
+                        Object sequence = resultMap.get("optimizedSequence");
+                        if (sequence instanceof java.util.List) {
+                            logger.info("  - Optimized sequence length: {}", ((java.util.List<?>) sequence).size());
+                        }
+                    }
+                    if (resultMap.containsKey("totalDistance")) {
+                        logger.info("  - Total distance: {}", resultMap.get("totalDistance"));
+                    }
+                    if (resultMap.containsKey("totalCost")) {
+                        logger.info("  - Total cost: {}", resultMap.get("totalCost"));
+                    }
+                    if (resultMap.containsKey("totalDuration")) {
+                        logger.info("  - Total duration: {}", resultMap.get("totalDuration"));
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("No se pudo parsear el resultado como JSON: {}", e.getMessage());
+                logger.info("Raw result data: {}", resultData);
+            }
+        } else {
+            logger.warn("Result data is null or empty!");
+        }
+        logger.info("=============================================");
+        
         jobRepository.findById(jobId).ifPresent(job -> {
             job.setResultData(resultData);
             jobRepository.save(job);
