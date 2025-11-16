@@ -223,7 +223,7 @@ public class EnhancedRouteOptimizationService {
                 updateJobStatus(jobId, OptimizationJob.JobStatus.PROCESSING, 60);
                 
                 // Construir solicitud
-                RouteProcessingRequestDTO processingRequest = buildProcessingRequestEnhanced(request);
+                RouteProcessingRequestDTO processingRequest = buildProcessingRequestEnhanced(jobId, request);
                 
                 // Llamar servicio con reintentos usando WebClient reactivo
                 String processingUrl = routeProcessingServiceUrl + "/api/v1/process-route";
@@ -263,11 +263,12 @@ public class EnhancedRouteOptimizationService {
      * NOTA: POIs ya vienen enriquecidos del controller, NO necesitamos llamar a Feign clients aquí
      * Esto evita problemas de autenticación en threads asíncronos
      */
-    private RouteProcessingRequestDTO buildProcessingRequestEnhanced(RouteOptimizationRequest request) {
+    private RouteProcessingRequestDTO buildProcessingRequestEnhanced(String jobId, RouteOptimizationRequest request) {
         RouteProcessingRequestDTO processingRequest = new RouteProcessingRequestDTO();
         
         // Información básica
-        processingRequest.setRouteId(request.getRouteId() != null ? request.getRouteId() : UUID.randomUUID().toString());
+        // CORRECCIÓN: Usar siempre el jobId como el routeId para trazabilidad
+        processingRequest.setRouteId(jobId);
         processingRequest.setUserId(request.getUserId() != null ? request.getUserId() : "system-user");
         
         logger.info("=== USANDO POIs DEL REQUEST (YA ENRIQUECIDOS) ===");
