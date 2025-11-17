@@ -14,15 +14,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.exiua.routeoptimizer.dto.EnrichedRouteProcessingRequestDTO;
 import com.exiua.routeoptimizer.dto.JobSubmissionResponseDTO;
 import com.exiua.routeoptimizer.model.RouteOptimizationRequest;
 import com.exiua.routeoptimizer.service.EnhancedRouteOptimizationService;
 import com.exiua.routeoptimizer.service.EnrichedRouteOptimizationIntegrationService;
-import com.exiua.routeoptimizer.service.ProcessingPOIBuilderService;
 import com.exiua.routeoptimizer.service.ProviderDataEnrichmentService;
 import com.exiua.routeoptimizer.service.ProviderDataEnrichmentService.EnrichedProviderData;
-import com.exiua.routeoptimizer.service.RouteProcessingRequestBuilderService;
 
 /**
  * Controlador para construcción de requests de procesamiento de rutas enriquecidos
@@ -32,15 +29,9 @@ import com.exiua.routeoptimizer.service.RouteProcessingRequestBuilderService;
 public class RouteProcessingController {
 
     private static final Logger log = LoggerFactory.getLogger(RouteProcessingController.class);
-    
-    @Autowired
-    private RouteProcessingRequestBuilderService requestBuilderService;
-    
+        
     @Autowired
     private ProviderDataEnrichmentService providerDataEnrichmentService;
-    
-    @Autowired
-    private ProcessingPOIBuilderService poiBuilderService;
     
     @Autowired
     private EnrichedRouteOptimizationIntegrationService integrationService;
@@ -167,69 +158,6 @@ public class RouteProcessingController {
     }
 
     /**
-     * Construye un request con filtrado por categorías
-     * 
-     * POST /api/route-processing/build-category-filtered-request
-     */
-    @PostMapping("/build-category-filtered-request")
-    public ResponseEntity<?> buildCategoryFilteredRequest(@RequestBody RouteRequestParams params) {
-        try {
-            log.info("Construyendo request filtrado por categorías para usuario {}", params.getUserId());
-            
-            if (params.getUserId() == null || params.getProviderIds() == null || 
-                params.getRequiredCategories() == null) {
-                return ResponseEntity.badRequest()
-                    .body("userId, providerIds y requiredCategories son requeridos");
-            }
-            
-            EnrichedRouteProcessingRequestDTO request = 
-                requestBuilderService.buildRequestWithCategoryFilter(
-                    params.getUserId(),
-                    params.getProviderIds(),
-                    params.getRequiredCategories(),
-                    params.getOptimizeFor()
-                );
-            
-            return ResponseEntity.ok(request);
-            
-        } catch (Exception e) {
-            log.error("Error construyendo request filtrado: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error construyendo request: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Construye un request optimizado por costo
-     * 
-     * POST /api/route-processing/build-cost-optimized-request
-     */
-    @PostMapping("/build-cost-optimized-request")
-    public ResponseEntity<?> buildCostOptimizedRequest(@RequestBody RouteRequestParams params) {
-        try {
-            log.info("Construyendo request optimizado por costo para usuario {}", params.getUserId());
-            
-            if (params.getUserId() == null || params.getProviderIds() == null) {
-                return ResponseEntity.badRequest().body("userId y providerIds son requeridos");
-            }
-            
-            EnrichedRouteProcessingRequestDTO request = 
-                requestBuilderService.buildCostOptimizedRequest(
-                    params.getUserId(),
-                    params.getProviderIds(),
-                    params.getMaxBudget()
-                );
-            
-            return ResponseEntity.ok(request);
-            
-        } catch (Exception e) {
-            log.error("Error construyendo request optimizado por costo: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error construyendo request: " + e.getMessage());
-        }
-    }
-
-    /**
      * Envía un trabajo de optimización de ruta con POIs enriquecidos
      * Este endpoint conecta el sistema de enriquecimiento con el servicio de optimización
      * 
@@ -272,91 +200,4 @@ public class RouteProcessingController {
         }
     }
 
-    /**
-     * Response class para costo promedio
-     */
-    public static class AverageCostResponse {
-        private Long providerId;
-        private Double averageCost;
-        private Boolean hasValidCost;
-
-        public AverageCostResponse(Long providerId, Double averageCost, Boolean hasValidCost) {
-            this.providerId = providerId;
-            this.averageCost = averageCost;
-            this.hasValidCost = hasValidCost;
-        }
-
-        public Long getProviderId() {
-            return providerId;
-        }
-
-        public void setProviderId(Long providerId) {
-            this.providerId = providerId;
-        }
-
-        public Double getAverageCost() {
-            return averageCost;
-        }
-
-        public void setAverageCost(Double averageCost) {
-            this.averageCost = averageCost;
-        }
-
-        public Boolean getHasValidCost() {
-            return hasValidCost;
-        }
-
-        public void setHasValidCost(Boolean hasValidCost) {
-            this.hasValidCost = hasValidCost;
-        }
-    }
-
-    /**
-     * Response class para validación de proveedores
-     */
-    public static class ValidationResponse {
-        private Boolean valid;
-        private String message;
-        private Integer validProvidersCount;
-        private Integer totalProvidersCount;
-
-        public ValidationResponse(Boolean valid, String message, Integer validCount, Integer totalCount) {
-            this.valid = valid;
-            this.message = message;
-            this.validProvidersCount = validCount;
-            this.totalProvidersCount = totalCount;
-        }
-
-        public Boolean getValid() {
-            return valid;
-        }
-
-        public void setValid(Boolean valid) {
-            this.valid = valid;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-
-        public Integer getValidProvidersCount() {
-            return validProvidersCount;
-        }
-
-        public void setValidProvidersCount(Integer validProvidersCount) {
-            this.validProvidersCount = validProvidersCount;
-        }
-
-        public Integer getTotalProvidersCount() {
-            return totalProvidersCount;
-        }
-
-        public void setTotalProvidersCount(Integer totalProvidersCount) {
-            this.totalProvidersCount = totalProvidersCount;
-        }
-    }
 }

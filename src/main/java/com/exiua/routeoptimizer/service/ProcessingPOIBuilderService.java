@@ -176,86 +176,14 @@ public class ProcessingPOIBuilderService {
     }
 
     /**
-     * Construye un ProcessingPOI enriquecido con datos del proveedor
-     * 
-     * @param providerId ID del proveedor
-     * @return POI enriquecido con costo promedio y categorías
-     */
-    public EnrichedProcessingPOI buildEnrichedPOI(Long providerId) {
-        log.info("Construyendo POI enriquecido para proveedor: {}", providerId);
-        
-        ProviderDataEnrichmentService.EnrichedProviderData enrichedData = 
-            providerDataEnrichmentService.getEnrichedProviderData(providerId);
-        
-        EnrichedProcessingPOI poi = new EnrichedProcessingPOI();
-        
-        ProveedorDTO provider = enrichedData.getProvider();
-        
-        // Datos básicos
-        poi.setId(provider.getIdProveedor());
-        poi.setProviderId(provider.getIdProveedor());
-        
-        // Manejar nombre de empresa null
-        String empresaName = provider.getNombre_empresa() != null ? provider.getNombre_empresa() : "Proveedor " + provider.getIdProveedor();
-        poi.setName(empresaName);
-        
-        // Manejar nombre de proveedor null
-        String providerName = provider.getNombre() != null ? provider.getNombre() : "Proveedor " + provider.getIdProveedor();
-        poi.setProviderName(providerName);
-        
-        // Coordenadas
-        try {
-            String coordX = provider.getCoordenadaX();
-            String coordY = provider.getCoordenadaY();
-            
-            if (coordX != null && coordY != null && !coordX.trim().isEmpty() && !coordY.trim().isEmpty()) {
-                poi.setLatitude(Double.parseDouble(coordX.trim()));
-                poi.setLongitude(Double.parseDouble(coordY.trim()));
-            } else {
-                log.warn("Coordenadas vacías o null para proveedor {}", providerId);
-                poi.setLatitude(0.0);
-                poi.setLongitude(0.0);
-            }
-        } catch (NumberFormatException e) {
-            log.warn("Error parseando coordenadas para proveedor {}: {}", providerId, e.getMessage());
-            poi.setLatitude(0.0);
-            poi.setLongitude(0.0);
-        }
-        
-        // Costo promedio de los servicios del proveedor
-        poi.setCost(enrichedData.getAverageCost());
-        
-        // Categorías (preferencias)
-        poi.setCategories(enrichedData.getCategories());
-        
-        // Categoría principal (primera preferencia o "Sin categoría")
-        if (!enrichedData.getCategories().isEmpty()) {
-            poi.setCategory(enrichedData.getCategories().get(0));
-        } else {
-            poi.setCategory("Sin_Categoria");
-        }
-        
-        // Información adicional
-        poi.setDescription("Proveedor: " + empresaName);
-        poi.setOpeningHours("Consultar con proveedor"); // Podría obtenerse de los servicios
-        poi.setAccessibility(false); // Valor por defecto
-        poi.setRating(0.0); // Podría calcularse desde las reseñas
-        // Usar tiempo promedio de los servicios del proveedor
-        poi.setVisitDuration(enrichedData.getAverageVisitDuration());
-        
-        log.debug("POI enriquecido construido: ID={}, Costo={}, Categorías={}, VisitDuration={} min", 
-            poi.getId(), poi.getCost(), poi.getCategories().size(), poi.getVisitDuration());
-        
-        return poi;
-    }
-
-    /**
      * Construye múltiples POIs enriquecidos en batch
      * 
      * @param providerIds Lista de IDs de proveedores
      * @return Lista de POIs enriquecidos
      */
     public List<EnrichedProcessingPOI> buildEnrichedPOIsBatch(List<Long> providerIds) {
+
+        log.info("Building POIs for provider IDs: {}", providerIds);
         log.info("Construyendo {} POIs enriquecidos en batch", providerIds.size());
         
         // Obtener datos enriquecidos de todos los proveedores
@@ -305,9 +233,15 @@ public class ProcessingPOIBuilderService {
         EnrichedProcessingPOI poi = new EnrichedProcessingPOI();
         ProveedorDTO provider = enrichedData.getProvider();
         
-        // Datos básicos
-        poi.setId(provider.getIdProveedor());
-        poi.setProviderId(provider.getIdProveedor());
+        
+        poi.setId(providerId);
+        poi.setProviderId(providerId);
+    
+        // Log any ID mismatches for debugging
+        if (provider.getIdProveedor() != null && !providerId.equals(provider.getIdProveedor())) {
+        log.warn("Provider ID mismatch detected! Requested: {}, Database has: {}, Name: {}", 
+            providerId, provider.getIdProveedor(), provider.getNombre_empresa());
+            }
         
         // Manejar nombre de empresa null
         String empresaName = provider.getNombre_empresa() != null ? provider.getNombre_empresa() : "Proveedor " + provider.getIdProveedor();

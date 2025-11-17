@@ -34,7 +34,7 @@ public class RouteJobStatusManagementController {
         this.enhancedOptimizationService = enhancedOptimizationService;
         
     }
-
+    
     /**
      * Get job status for polling
      */

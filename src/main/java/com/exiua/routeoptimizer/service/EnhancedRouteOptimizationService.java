@@ -265,6 +265,9 @@ public class EnhancedRouteOptimizationService {
      */
     private RouteProcessingRequestDTO buildProcessingRequestEnhanced(String jobId, RouteOptimizationRequest request) {
         RouteProcessingRequestDTO processingRequest = new RouteProcessingRequestDTO();
+
+        logger.info("=== BUILDING PROCESSING REQUEST ===");
+        logger.info("Original request has {} POIs", request.getPois().size());
         
         // Información básica
         // CORRECCIÓN: Usar siempre el jobId como el routeId para trazabilidad
@@ -282,7 +285,7 @@ public class EnhancedRouteOptimizationService {
                     RouteProcessingRequestDTO.ProcessingPOIDTO dto = new RouteProcessingRequestDTO.ProcessingPOIDTO();
                     
                     // Basic identification and location
-                    dto.setId(poi.getId() != null ? poi.getId() : System.currentTimeMillis() + Math.round(Math.random() * 1000));
+                    dto.setId(poi.getId());
                     dto.setName(poi.getName() != null ? poi.getName() : "POI Anónimo");
                     dto.setLatitude(poi.getLatitude() != null ? poi.getLatitude() : 10.501);
                     dto.setLongitude(poi.getLongitude() != null ? poi.getLongitude() : -84.697);
