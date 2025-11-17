@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.exiua.routeoptimizer.dto.EnrichedProcessingPOI;
+import com.exiua.routeoptimizer.dto.EnrichedProviderData;
 import com.exiua.routeoptimizer.dto.ProveedorDTO;
 
 /**
@@ -24,158 +26,6 @@ public class ProcessingPOIBuilderService {
     private ProviderDataEnrichmentService providerDataEnrichmentService;
 
     /**
-     * Clase interna que replica ProcessingPOI para evitar dependencias circulares
-     * En producción, deberías tener esta clase en un módulo común compartido
-     */
-    public static class EnrichedProcessingPOI {
-        private Long id;
-        private String name;
-        private Double latitude;
-        private Double longitude;
-        private String category;
-        private String subcategory;
-        private Integer visitDuration;
-        private Double cost;
-        private Double rating;
-        private String openingHours;
-        private String description;
-        private String imageUrl;
-        private Boolean accessibility;
-        private Long providerId;
-        private String providerName;
-        private List<String> categories; // Preferencias del proveedor
-
-        // Getters y Setters
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public Double getLatitude() {
-            return latitude;
-        }
-
-        public void setLatitude(Double latitude) {
-            this.latitude = latitude;
-        }
-
-        public Double getLongitude() {
-            return longitude;
-        }
-
-        public void setLongitude(Double longitude) {
-            this.longitude = longitude;
-        }
-
-        public String getCategory() {
-            return category;
-        }
-
-        public void setCategory(String category) {
-            this.category = category;
-        }
-
-        public String getSubcategory() {
-            return subcategory;
-        }
-
-        public void setSubcategory(String subcategory) {
-            this.subcategory = subcategory;
-        }
-
-        public Integer getVisitDuration() {
-            return visitDuration;
-        }
-
-        public void setVisitDuration(Integer visitDuration) {
-            this.visitDuration = visitDuration;
-        }
-
-        public Double getCost() {
-            return cost;
-        }
-
-        public void setCost(Double cost) {
-            this.cost = cost;
-        }
-
-        public Double getRating() {
-            return rating;
-        }
-
-        public void setRating(Double rating) {
-            this.rating = rating;
-        }
-
-        public String getOpeningHours() {
-            return openingHours;
-        }
-
-        public void setOpeningHours(String openingHours) {
-            this.openingHours = openingHours;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-
-        public void setDescription(String description) {
-            this.description = description;
-        }
-
-        public String getImageUrl() {
-            return imageUrl;
-        }
-
-        public void setImageUrl(String imageUrl) {
-            this.imageUrl = imageUrl;
-        }
-
-        public Boolean getAccessibility() {
-            return accessibility;
-        }
-
-        public void setAccessibility(Boolean accessibility) {
-            this.accessibility = accessibility;
-        }
-
-        public Long getProviderId() {
-            return providerId;
-        }
-
-        public void setProviderId(Long providerId) {
-            this.providerId = providerId;
-        }
-
-        public String getProviderName() {
-            return providerName;
-        }
-
-        public void setProviderName(String providerName) {
-            this.providerName = providerName;
-        }
-
-        public List<String> getCategories() {
-            return categories;
-        }
-
-        public void setCategories(List<String> categories) {
-            this.categories = categories;
-        }
-    }
-
-    /**
      * Construye múltiples POIs enriquecidos en batch
      * 
      * @param providerIds Lista de IDs de proveedores
@@ -187,14 +37,14 @@ public class ProcessingPOIBuilderService {
         log.info("Construyendo {} POIs enriquecidos en batch", providerIds.size());
         
         // Obtener datos enriquecidos de todos los proveedores
-        Map<Long, ProviderDataEnrichmentService.EnrichedProviderData> enrichedDataMap = 
+        Map<Long, EnrichedProviderData> enrichedDataMap = 
             providerDataEnrichmentService.getEnrichedProviderDataBatch(providerIds);
         
         // Construir POIs
         List<EnrichedProcessingPOI> pois = providerIds.stream()
             .map(providerId -> {
                 try {
-                    ProviderDataEnrichmentService.EnrichedProviderData enrichedData = 
+                    EnrichedProviderData enrichedData = 
                         enrichedDataMap.get(providerId);
                     
                     if (enrichedData == null) {
@@ -228,7 +78,7 @@ public class ProcessingPOIBuilderService {
      */
     private EnrichedProcessingPOI buildPOIFromEnrichedData(
             Long providerId, 
-            ProviderDataEnrichmentService.EnrichedProviderData enrichedData) {
+            EnrichedProviderData enrichedData) {
         
         EnrichedProcessingPOI poi = new EnrichedProcessingPOI();
         ProveedorDTO provider = enrichedData.getProvider();

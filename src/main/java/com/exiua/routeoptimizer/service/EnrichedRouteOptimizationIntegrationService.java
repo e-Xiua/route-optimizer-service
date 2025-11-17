@@ -8,8 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.exiua.routeoptimizer.dto.EnrichedProcessingPOI;
 import com.exiua.routeoptimizer.model.RouteOptimizationRequest;
-import com.exiua.routeoptimizer.service.ProcessingPOIBuilderService.EnrichedProcessingPOI;
+
 
 /**
  * Servicio para integrar POIs enriquecidos con el sistema de optimización de rutas existente

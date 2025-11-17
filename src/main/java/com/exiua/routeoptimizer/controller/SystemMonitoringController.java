@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.exiua.routeoptimizer.dto.SystemStatsDTO;
 import com.exiua.routeoptimizer.service.EnhancedRouteOptimizationService;
-import com.exiua.routeoptimizer.service.EnhancedRouteOptimizationService.SystemStatsDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

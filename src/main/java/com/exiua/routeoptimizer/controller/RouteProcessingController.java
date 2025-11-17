@@ -14,12 +14,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.exiua.routeoptimizer.dto.EnrichedProviderData;
 import com.exiua.routeoptimizer.dto.JobSubmissionResponseDTO;
 import com.exiua.routeoptimizer.model.RouteOptimizationRequest;
 import com.exiua.routeoptimizer.service.EnhancedRouteOptimizationService;
 import com.exiua.routeoptimizer.service.EnrichedRouteOptimizationIntegrationService;
 import com.exiua.routeoptimizer.service.ProviderDataEnrichmentService;
-import com.exiua.routeoptimizer.service.ProviderDataEnrichmentService.EnrichedProviderData;
 
 /**
  * Controlador para construcción de requests de procesamiento de rutas enriquecidos

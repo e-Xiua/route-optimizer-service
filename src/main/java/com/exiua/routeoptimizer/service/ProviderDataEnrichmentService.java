@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import com.exiua.routeoptimizer.client.PreferenciasApiClient;
 import com.exiua.routeoptimizer.client.ProviderApiClient;
 import com.exiua.routeoptimizer.client.ServicioApiClient;
+import com.exiua.routeoptimizer.dto.EnrichedProviderData;
 import com.exiua.routeoptimizer.dto.PreferenciasDTO;
 import com.exiua.routeoptimizer.dto.ProveedorDTO;
 import com.exiua.routeoptimizer.dto.ServicioDTO;
@@ -39,73 +40,6 @@ public class ProviderDataEnrichmentService {
     
     @Autowired
     private PreferenciasApiClient preferenciasApiClient;
-
-    /**
-     * Datos enriquecidos del proveedor
-     */
-    public static class EnrichedProviderData {
-        private ProveedorDTO provider;
-        private List<ServicioDTO> services;
-        private Double averageCost;
-        private Integer averageVisitDuration; // Tiempo promedio de visita en minutos
-        private List<String> categories; // Nombres de preferencias
-        private Map<String, Object> metadata;
-
-        public EnrichedProviderData() {
-            this.services = new ArrayList<>();
-            this.categories = new ArrayList<>();
-            this.metadata = new HashMap<>();
-        }
-
-        // Getters y Setters
-        public ProveedorDTO getProvider() {
-            return provider;
-        }
-
-        public void setProvider(ProveedorDTO provider) {
-            this.provider = provider;
-        }
-
-        public List<ServicioDTO> getServices() {
-            return services;
-        }
-
-        public void setServices(List<ServicioDTO> services) {
-            this.services = services;
-        }
-
-        public Double getAverageCost() {
-            return averageCost;
-        }
-
-        public void setAverageCost(Double averageCost) {
-            this.averageCost = averageCost;
-        }
-
-        public Integer getAverageVisitDuration() {
-            return averageVisitDuration;
-        }
-
-        public void setAverageVisitDuration(Integer averageVisitDuration) {
-            this.averageVisitDuration = averageVisitDuration;
-        }
-
-        public List<String> getCategories() {
-            return categories;
-        }
-
-        public void setCategories(List<String> categories) {
-            this.categories = categories;
-        }
-
-        public Map<String, Object> getMetadata() {
-            return metadata;
-        }
-
-        public void setMetadata(Map<String, Object> metadata) {
-            this.metadata = metadata;
-        }
-    }
 
     /**
      * Obtiene datos enriquecidos de un proveedor

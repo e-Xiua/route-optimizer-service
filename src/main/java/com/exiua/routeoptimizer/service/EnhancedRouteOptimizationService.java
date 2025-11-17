@@ -20,6 +20,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.exiua.routeoptimizer.dto.JobStatusResponseDTO;
 import com.exiua.routeoptimizer.dto.JobSubmissionResponseDTO;
 import com.exiua.routeoptimizer.dto.RouteProcessingRequestDTO;
+import com.exiua.routeoptimizer.dto.SystemStatsDTO;
 import com.exiua.routeoptimizer.model.OptimizationJob;
 import com.exiua.routeoptimizer.model.RouteOptimizationRequest;
 import com.exiua.routeoptimizer.repository.OptimizationJobRepository;
@@ -508,33 +509,5 @@ public class EnhancedRouteOptimizationService {
             jobRepository.save(job);
         });
     }
-    
-    // DTO para estadísticas del sistema
-    public static class SystemStatsDTO {
-        private int activeJobs;
-        private int maxConcurrentJobs;
-        private int totalJobsSubmitted;
-        private int totalJobsCompleted;
-        private int totalJobsFailed;
-        private double successRate;
-        
-        // Getters y setters
-        public int getActiveJobs() { return activeJobs; }
-        public void setActiveJobs(int activeJobs) { this.activeJobs = activeJobs; }
-        
-        public int getMaxConcurrentJobs() { return maxConcurrentJobs; }
-        public void setMaxConcurrentJobs(int maxConcurrentJobs) { this.maxConcurrentJobs = maxConcurrentJobs; }
-        
-        public int getTotalJobsSubmitted() { return totalJobsSubmitted; }
-        public void setTotalJobsSubmitted(int totalJobsSubmitted) { this.totalJobsSubmitted = totalJobsSubmitted; }
-        
-        public int getTotalJobsCompleted() { return totalJobsCompleted; }
-        public void setTotalJobsCompleted(int totalJobsCompleted) { this.totalJobsCompleted = totalJobsCompleted; }
-        
-        public int getTotalJobsFailed() { return totalJobsFailed; }
-        public void setTotalJobsFailed(int totalJobsFailed) { this.totalJobsFailed = totalJobsFailed; }
-        
-        public double getSuccessRate() { return successRate; }
-        public void setSuccessRate(double successRate) { this.successRate = successRate; }
-    }
+
 }
