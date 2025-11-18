@@ -18,4 +18,7 @@ public class ServicioDTO {
     private String imagen;
     private String horario;
     private boolean estado;
+    
+    @JsonProperty("tiempoAproximado")
+    private Integer tiempoAproximado; // Tiempo aproximado de visita en minutos
 }

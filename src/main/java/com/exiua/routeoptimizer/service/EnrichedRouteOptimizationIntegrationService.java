@@ -8,11 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.exiua.routeoptimizer.dto.EnrichedRouteProcessingRequestDTO;
-import com.exiua.routeoptimizer.model.OptimizationJob;
+import com.exiua.routeoptimizer.dto.EnrichedProcessingPOI;
 import com.exiua.routeoptimizer.model.RouteOptimizationRequest;
-import com.exiua.routeoptimizer.repository.OptimizationJobRepository;
-import com.exiua.routeoptimizer.service.ProcessingPOIBuilderService.EnrichedProcessingPOI;
+
 
 /**
  * Servicio para integrar POIs enriquecidos con el sistema de optimización de rutas existente
@@ -24,13 +22,7 @@ public class EnrichedRouteOptimizationIntegrationService {
     private static final Logger log = LoggerFactory.getLogger(EnrichedRouteOptimizationIntegrationService.class);
     
     @Autowired
-    private RouteProcessingRequestBuilderService requestBuilderService;
-    
-    @Autowired
     private ProcessingPOIBuilderService poiBuilderService;
-    
-    @Autowired
-    private OptimizationJobRepository jobRepository;
 
     /**
      * Crea un RouteOptimizationRequest desde POIs enriquecidos
@@ -84,104 +76,50 @@ public class EnrichedRouteOptimizationIntegrationService {
     }
 
     /**
-     * Crea y envía un trabajo de optimización usando POIs enriquecidos
-     * 
-     * @param userId ID del usuario
-     * @param providerIds Lista de IDs de proveedores
-     * @param optimizeFor Criterio de optimización (distance, time, cost, experience)
-     * @param maxBudget Presupuesto máximo (puede ser null)
-     * @return ID del trabajo creado
-     */
-    public String submitOptimizationJobWithEnrichedPOIs(
-            Long userId,
-            List<Long> providerIds,
-            String optimizeFor,
-            Double maxBudget) {
-        
-        log.info("Iniciando trabajo de optimización con POIs enriquecidos");
-        
-        // Crear request de optimización
-        RouteOptimizationRequest request = createOptimizationRequestFromProviders(
-            userId, providerIds, optimizeFor, maxBudget);
-        
-        // Crear trabajo en la base de datos
-        OptimizationJob job = new OptimizationJob();
-        job.setJobId(request.getRouteId());
-        job.setUserId(request.getUserId());
-        job.setStatus(OptimizationJob.JobStatus.PENDING);
-        job.setProgressPercentage(0);
-        
-        // Guardar información de POIs enriquecidos como metadata
-        try {
-            String enrichedMetadata = buildEnrichedMetadata(providerIds, optimizeFor, maxBudget);
-            // Podrías agregar un campo metadata al OptimizationJob si lo necesitas
-            log.debug("Metadata enriquecida: {}", enrichedMetadata);
-        } catch (Exception e) {
-            log.warn("Error construyendo metadata: {}", e.getMessage());
-        }
-        
-        jobRepository.save(job);
-        
-        log.info("Trabajo de optimización creado con ID: {}", job.getJobId());
-        
-        return job.getJobId();
-    }
-
-    /**
      * Convierte EnrichedProcessingPOI al modelo POI existente
      */
     private com.exiua.routeoptimizer.model.POI convertToPOI(EnrichedProcessingPOI enrichedPOI) {
         com.exiua.routeoptimizer.model.POI poi = new com.exiua.routeoptimizer.model.POI();
+
+        log.info("Converting POI - Original ID: {}, Name: {}, ProviderID: {}", 
+        enrichedPOI.getId(), enrichedPOI.getName(), enrichedPOI.getProviderId());
         
+        // Basic identification
         poi.setId(enrichedPOI.getId());
         poi.setName(enrichedPOI.getName());
         poi.setLatitude(enrichedPOI.getLatitude());
         poi.setLongitude(enrichedPOI.getLongitude());
+        
+        // Categories (both array and single)
         List<String> categories = enrichedPOI.getCategories();
         if (categories != null && !categories.isEmpty()) {
             poi.setCategories(categories.toArray(new String[0]));
         } else {
             poi.setCategories(new String[0]);
         }
+        poi.setCategory(enrichedPOI.getCategory()); // Single category string
+        poi.setSubcategory(enrichedPOI.getSubcategory());
+        
+        // Timing and cost
         poi.setVisitDuration(enrichedPOI.getVisitDuration());
+        poi.setCost(enrichedPOI.getCost());
+        poi.setRating(enrichedPOI.getRating());
         
-        // Agregar cost como atributo adicional si el modelo lo soporta
-        // De lo contrario, el costo ya está incluido en la lógica de optimización
+        // Additional information
+        poi.setDescription(enrichedPOI.getDescription());
+        poi.setOpeningHours(enrichedPOI.getOpeningHours());
+        poi.setImageUrl(enrichedPOI.getImageUrl());
+        poi.setAccessibility(enrichedPOI.getAccessibility());
         
-        log.debug("Convertido POI: {} (Costo: {}, Categorías: {})", 
-            enrichedPOI.getName(), enrichedPOI.getCost(), enrichedPOI.getCategories());
+        // Provider information
+        poi.setProviderId(enrichedPOI.getProviderId());
+        poi.setProviderName(enrichedPOI.getProviderName());
+        
+        log.debug("Convertido POI: {} (ProviderId: {}, Costo: {}, Categorías: {}, Description: {})", 
+            enrichedPOI.getName(), enrichedPOI.getProviderId(), enrichedPOI.getCost(), 
+            enrichedPOI.getCategories(), enrichedPOI.getDescription());
         
         return poi;
-    }
-
-    /**
-     * Construye metadata enriquecida para el trabajo
-     */
-    private String buildEnrichedMetadata(List<Long> providerIds, String optimizeFor, Double maxBudget) {
-        StringBuilder metadata = new StringBuilder();
-        metadata.append("Providers: ").append(providerIds.size());
-        metadata.append(", OptimizeFor: ").append(optimizeFor != null ? optimizeFor : "distance");
-        if (maxBudget != null) {
-            metadata.append(", MaxBudget: ").append(maxBudget);
-        }
-        return metadata.toString();
-    }
-
-    /**
-     * Obtiene el request enriquecido completo (útil para debugging o logs)
-     */
-    public EnrichedRouteProcessingRequestDTO getEnrichedRequest(
-            Long userId,
-            List<Long> providerIds,
-            String optimizeFor,
-            Double maxBudget) {
-        
-        if (maxBudget != null) {
-            return requestBuilderService.buildCostOptimizedRequest(userId, providerIds, maxBudget);
-        } else {
-            return requestBuilderService.buildEnrichedRequest(
-                userId, providerIds, null, optimizeFor, null, null, null, null);
-        }
     }
 
     /**
