@@ -247,14 +247,7 @@ export class RouteOptimizationService {
 4. **Base de datos** rastrea el estado y progreso
 5. **Cliente** obtiene resultado final cuando está listo
 
-## Próximos Pasos
 
-- [ ] Integrar con servicio Python MRL-AMIS real
-- [ ] Implementar autenticación JWT
-- [ ] Agregar cache Redis para resultados
-- [ ] Métricas con Spring Actuator
-- [ ] Tests unitarios e integración
-- [ ] Dockerización del servicio
 
 ---
 
